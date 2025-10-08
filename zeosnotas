@@ -1,0 +1,48 @@
+# lab 1
+.text codigo
+.data vars
+.bss vars sin inicializar
+.rodata constantes
+
+
+la makefile es -O2 
+
+
+# lab 2
+
+1) Complete Zeos code.
+2) Implement the keyboard management.
+4) Implement the clock management.
+6) Implement the page fault exception management
+5) Implement the gettime system call.
+3) Implement the write system call.
+
+interrupt de teclado [check]
+
+en user, llamada write() para probar llamada write, cuando se presione una tecla
+masks
+
+
+[X] Implement the sys_write routine.
+[X] Modify the sys_call_table with the new routine.
+[X] Create a wrapper for the system call.
+[X] Implement the system_call_handler routine.
+[X] Initialize either the IDT or the MSRs (or both) with the handler, depending on the mechanism
+to invoke the operating system code used (int, sysenter or both).
+[X] Implement the errno [variable] and perror function.
+
+syscall args EDX, ECX, EBX, ESI, EDI, EBP. result EAX
+
+[X] comprovacio crides a sistema: basiques
+[X] falta perror
+[X] no hi ha fast syscall
+[X] wrappers: tot i que l'idea de reaprofitar codi no em desagrada, no compliu la convenció de C de crides a funció. Cal guardar el valor dels registres EBP, ESP, EBX, ESI i EDI si es modifiquen i clarament aquí els modifiqueu tots
+[X] handlers: EOI a les interrupcions hardware sempre abans de la crida a la rutina de servei. Les excepcions (PF) NO han de fer EOI.
+[X] l'excepció de PF s'ha de quedar en un bucle infinit
+[X] l'excepció de PF ha de mostrar l'adreça en format hexadecimal.
+[X] sys_write: defineix una variable local de 4096 bytes. Això no ho podeu fer. La pila té mida fixa de 4096 bytes i ja hi té coses, si feu això quan hi guardeu valors estareu matxacant camps d'altres processos.
+[X] sys_write: count==0 NO és un error
+
+[ ] Hacer lo de print con color y scroll eh
+[ ] arreglar mensaje perror de EBADFD
+

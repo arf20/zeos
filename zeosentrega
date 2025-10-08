@@ -1,0 +1,61 @@
+# SO2 entrega 1
+
+## 2.6.1.
+
+4. Its executing a jmp for the while(1)
+
+## 2.6.2.
+
+ - Yes
+ - No, because the object code does not have real addresses, only relative. The linking stage fills in the real addresses according to the linker script.
+ - The `while (1) { }`
+ - There is never a call to add(), main() is only a infinite loop. Because its being compiled with -O2. user.o can be generated manually with -O0 because for some reason changing the optimization level in CFLAGS breaks the compilation which shouldn't be possible.
+
+## 2.6.3.
+
+ - 
+   - `add(int, int)` is not dynamically linked.
+   - Via the stack, relative to %ebp
+   - Via %eax
+ - 
+   - 0x113fdc
+
+# SO2 entrega 2
+
+## 3.10.1
+
+ - RESTORE_ALL
+ - EOI
+
+## 3.10.2
+
+ - keyboard_handler
+ - keyboard_routine()
+
+# 3.10.3
+ 
+ - write() wrapper
+ - sys_write(): Uses a 4096 buffer, for which the kernel stack was increased to 8192 bytes
+ - system_call_handler
+ - errno, perror() and strerror()
+
+ - FAST_SYSCALL
+ - fast_syscall_handler
+ - MSR inits
+
+# 3.10.4
+
+ - clock_handler
+ - clock_routine()
+ - zeos_ticks
+
+# 3.10.5
+
+ - gettime() wrapper
+ - sys_gettime
+
+# 3.10.6
+
+ - page_fault_handler_new
+ - page_fault_routine_new
+
