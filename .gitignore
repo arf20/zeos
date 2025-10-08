@@ -1,0 +1,12 @@
+*.o
+*.s
+*.bin
+*.out
+.bochsrc
+.bochsrc_gdb
+bootsect
+build
+system
+user
+bochsout.txt
+
