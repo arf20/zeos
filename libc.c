@@ -67,7 +67,7 @@ static const char *strerror_msg[] = {
     /* 55      ENOANO          */  "No anode",
     /* 56      EBADRQC         */  "Invalid request code",
     /* 57      EBADSLT         */  "Invalid slot",
-    /* 58                      */
+    /* 58                      */   "reserved",
     /* 59      EBFONT          */  "Bad font file format",
     /* 60      ENOSTR          */  "Device not a stream",
     /* 61      ENODATA         */  "No data available",

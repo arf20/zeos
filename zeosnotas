@@ -43,6 +43,7 @@ syscall args EDX, ECX, EBX, ESI, EDI, EBP. result EAX
 [X] sys_write: defineix una variable local de 4096 bytes. Això no ho podeu fer. La pila té mida fixa de 4096 bytes i ja hi té coses, si feu això quan hi guardeu valors estareu matxacant camps d'altres processos.
 [X] sys_write: count==0 NO és un error
 
-[ ] Hacer lo de print con color y scroll eh
-[ ] arreglar mensaje perror de EBADFD
+[X] printc_color
+[X] printc scroll
+[X] arreglar mensaje perror de EBADFD
 

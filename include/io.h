@@ -7,12 +7,14 @@
 
 #include <types.h>
 
+Byte inb (unsigned short port);
+
 /** Screen functions **/
 /**********************/
-
-Byte inb (unsigned short port);
+void clear_screen();
+void printc_color(char c, unsigned char color);
 void printc(char c);
 void printc_xy(Byte x, Byte y, char c);
-void printk(char *string);
+void printk(const char *string);
 
 #endif  /* __IO_H__ */
