@@ -47,3 +47,22 @@ syscall args EDX, ECX, EBX, ESI, EDI, EBP. result EAX
 [X] printc scroll
 [X] arreglar mensaje perror de EBADFD
 
+
+## control de procesos
+
+
+[X] Adapt the task_struct definition.
+[X] Initialize a free queue.
+[X] Initialize a ready queue.
+[ ] Implement the initial processes initialization.
+    [X] Task idle
+    [ ] Task 1
+[ ] Implement the task_switch function.
+[ ] Implement the inner_task_switch function.
+[ ] Implement the getpid system call.
+[ ] Implement the fork system call.
+[ ] Implement process scheduling.
+[ ] Implement the exit system call.
+[ ] Implement the block system call.
+[ ] Implement the unblock system call.
+
