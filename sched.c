@@ -62,13 +62,14 @@ void init_idle(void)
     struct list_head *e = list_first(freequeue);
     idle_task = list_entry(e, struct task_struct, list);
     list_del(e);
+
     idle_task->PID = 0;
     allocate_DIR(idle_task);
     unsigned long *idle_stack = ((union task_union*)idle_task)->stack;
-    idle_stack[1023] = (unsigned long)cpu_idle;
-    idle_stack[1022] = (unsigned long)0;
-    unsigned long *kernel_ebp = (unsigned long*)&idle_task->kernel_esp;
+    idle_stack[1023] = (unsigned long)cpu_idle; /* function for the process to execute */
+    idle_stack[1022] = (unsigned long)0; /* process %ebp, 0 because it doesnt use the stack, so it doesnt need a valid ebp */
 
+    unsigned long *kernel_ebp = (unsigned long*)&idle_task->kernel_esp;
     __asm__ __volatile__ (
         "mov %%ebp, %0"
         :
@@ -81,9 +82,14 @@ void init_task1(void)
     struct list_head *e = list_first(freequeue);
     struct task_struct *t = list_entry(e, struct task_struct, list);
     list_del(e);
+
     t->PID = 1;
     allocate_DIR(t);
     set_user_pages(t);
+
+    tss.esp0 = &((union task_union*)t)->stack[1023];
+
+    setcr3(t->dir_pages_baseAddr);
 }
 
 void init_sched()
