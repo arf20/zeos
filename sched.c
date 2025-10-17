@@ -69,12 +69,7 @@ void init_idle(void)
     idle_stack[1023] = (unsigned long)cpu_idle; /* function for the process to execute */
     idle_stack[1022] = (unsigned long)0; /* process %ebp, 0 because it doesnt use the stack, so it doesnt need a valid ebp */
 
-    unsigned long *kernel_ebp = (unsigned long*)&idle_task->kernel_esp;
-    __asm__ __volatile__ (
-        "mov %%ebp, %0"
-        :
-        : "m"(kernel_ebp)
-    );
+    save_ebp(&kernel_ebp);
 }
 
 void init_task1(void)
@@ -87,9 +82,11 @@ void init_task1(void)
     allocate_DIR(t);
     set_user_pages(t);
 
-    tss.esp0 = &((union task_union*)t)->stack[1023];
+    void* system_stack = &((union task_union*)t)->stack[1023];
+    tss.esp0 = system_stack;
+    write_msr(0x175, system_stack, 0);
 
-    setcr3(t->dir_pages_baseAddr);
+    set_cr3(t->dir_pages_baseAddr);
 }
 
 void init_sched()
@@ -111,4 +108,39 @@ struct task_struct *current()
     );
     return (struct task_struct*)(ret_value&0xfffff000);
 }
+
+void task_switch(union task_union *new)
+{
+    __asm__ __volatile__ (
+        "pushl %%esi"
+        "pushl %%edi"
+        "pushl %%ebx"
+        : :
+    );
+    inner_task_switch();
+    __asm__ __volatile__ (
+        "popl %%ebx"
+        "popl %%edi"
+        "popl %%esi"
+        : :
+    );
+}
+
+void inner_task_switch(union task_union *new)
+{
+    /* set new sysenter system stack */
+    tss.esp0 = new->stack;
+    write_msr(0x175, new->stack, 0);
+    /* set new page table */
+    set_cr3(new->task.dir_pages_baseAddr);
+    /* sabe ebp */
+    save_ebp(&current()->system_esp);
+    /* set stack to new */
+    __asm__ __volatile__ (
+        "mov %0, %%esp"
+        :
+        : "m"(new->kernel_esp)
+    );
+}   /* popl %ebp
+       ret */
 
