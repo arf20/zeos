@@ -141,27 +141,4 @@ fast_syscall_handler_end:
     sti
     sysexit
 
-/*
-esp>edi
-    ebp
-    ra
-    kernel_esp
-    ...
-    ebp
-
-*/
-ENTRY(save_ebp)
-    pushl %ebp
-    mov %esp, %ebp
-
-    pushl %edi
-
-    mov (%ebp), %eax
-    mov (%eax), %eax
-    mov 8(%ebp), %edi
-    mov %eax, (%edi)
-
-    popl %edi
-    
-    ret
 

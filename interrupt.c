@@ -8,6 +8,8 @@
 #include <io.h>
 #include <entry.h>
 #include <util.h>
+#include <sched.h>
+#include <task_switch.h>
 
 #include <zeos_interrupt.h>
 
@@ -108,6 +110,10 @@ void keyboard_routine(void)
         char c = char_map[scancode];
         if (c == 0) c = 'C';
         printc_xy(0, 0, c);
+
+        if (c == 'i') {
+            task_switch(&task[0]);
+        }
     }
 }
 
