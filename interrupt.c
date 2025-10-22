@@ -112,7 +112,7 @@ void keyboard_routine(void)
         printc_xy(0, 0, c);
 
         if (c == 'i') {
-            task_switch(&task[9]);
+            task_switch((union task_union*)idle_task);
         }
     }
 }
@@ -122,8 +122,6 @@ void clock_routine(void)
     zeos_show_clock();
     zeos_ticks++;
 }
-
-
 
 void page_fault_routine_new(unsigned int eip)
 {

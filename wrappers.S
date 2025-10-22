@@ -85,5 +85,7 @@ FAST_SYSCALL(gettime, 10)
 FAST_SYSCALL(write, 4)
 // int getpid()
 FAST_SYSCALL(getpid, 20)
+// int fork()
+FAST_SYSCALL(fork, 2)
 
 

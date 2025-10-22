@@ -77,18 +77,22 @@ void init_idle(void)
 
 void init_task1(void)
 {
+    /* get a free PCB */
     struct list_head *e = list_first(&freequeue);
     struct task_struct *t = list_entry(e, struct task_struct, list);
     list_del(e);
 
+    /* assign PID1 and allocate pages */
     t->PID = 1;
     allocate_DIR(t);
     set_user_pages(t);
 
+    /* set stack and return address */
     DWord system_stack = (DWord)&((union task_union*)t)->stack[1023];
     tss.esp0 = (DWord)system_stack;
     write_msr(0x175, system_stack, 0);
 
+    /* set cr3 to this process table */
     set_cr3(t->dir_pages_baseAddr);
 }
 
