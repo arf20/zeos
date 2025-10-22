@@ -28,12 +28,20 @@ ENTRY(save_ebp)
     ret
 
 
+/*
+esp>0   %ebx
+    4   %edi
+    8   %esi
+    12  ra keyboard_routine
+    16  new
+*/
+
 //void task_switch(union task_union *new)
 ENTRY(task_switch)
     pushl   %esi
     pushl   %edi
     pushl   %ebx
-    pushl   8(%ebp)
+    pushl   16(%esp)
     call    inner_task_switch
     sub     -4, %ebp
     popl    %ebx
@@ -50,9 +58,14 @@ ENTRY(task_switch)
 
 /* void inner_task_return(void): set stack to new */
 ENTRY(inner_task_return)
-    mov 12(%esp), %eax  /* %eax = &new */
+    mov 4(%esp), %eax  /* %eax = &new */
     mov 8(%eax), %esp   /* %esp = new->kernel_esp ESTAMOS EN NUEVO */
      
     popl %ebp
     ret
+
+/*
+kesp>   1022    %ebp = 0
+        1023    ra   -> cpu_idle
+*/
 

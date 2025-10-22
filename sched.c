@@ -71,7 +71,8 @@ void init_idle(void)
     idle_stack[1023] = (unsigned long)cpu_idle; /* function for the process to execute */
     idle_stack[1022] = (unsigned long)0; /* process %ebp, 0 because it doesnt use the stack, so it doesnt need a valid ebp */
 
-    save_ebp(&idle_task->kernel_esp);
+    //save_ebp(&idle_task->kernel_esp);
+    idle_task->kernel_esp = &idle_stack[1022];
 }
 
 void init_task1(void)

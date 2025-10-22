@@ -112,7 +112,7 @@ void keyboard_routine(void)
         printc_xy(0, 0, c);
 
         if (c == 'i') {
-            task_switch(&task[0]);
+            task_switch(&task[9]);
         }
     }
 }
