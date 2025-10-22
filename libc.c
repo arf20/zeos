@@ -191,5 +191,7 @@ void perror(const char *s)
     write(1, s, strlen(s));
     write(1, ": ", 2);
     write(1, msg, strlen(msg));
+    write(1, "\n", 1);
 }
+
 

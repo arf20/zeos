@@ -95,13 +95,11 @@ ENTRY(page_fault_handler_new)
     add     $-4, %esp            // clear error
     iret
 
-#define MAX_SYSCALL     10
-
 ENTRY(syscall_handler)
     SAVE_ALL
     cmpl $0, %eax
     jl err
-    cmpl $MAX_SYSCALL, %eax
+    cmpl $max_syscall, %eax
     jg err
     call *sys_call_table(, %eax, 0x04)
     jmp fin
@@ -123,7 +121,7 @@ ENTRY(fast_syscall_handler)
 
     cmpl $0, %eax
     jl enosys
-    cmpl $MAX_SYSCALL, %eax
+    cmpl $max_syscall, %eax
     jg enosys
 
     call *sys_call_table(, %eax, 0x04)

@@ -59,6 +59,7 @@ syscall args EDX, ECX, EBX, ESI, EDI, EBP. result EAX
     [X] Task 1
 [X] Implement the task_switch function.
 [X] Implement the inner_task_switch function.
+[X] Test task switching
 [ ] Implement the getpid system call.
 [ ] Implement the fork system call.
 [ ] Implement process scheduling.

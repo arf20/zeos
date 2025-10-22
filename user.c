@@ -25,6 +25,11 @@ int __attribute__ ((__section__(".text.main")))
 
     if (write(-1, "", -1) < 0)
         perror("write(1) failed");
+
+    char pid = getpid() + '0';
+    write(1, "pid=", 4);
+    write(1, &pid, 1);
+    write(1, "\n", 1);
     
     while(1) { }
 }
