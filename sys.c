@@ -30,13 +30,18 @@ int check_fd(int fd, int permissions)
 
 int sys_ni_syscall()
 {
-	return -38; /*ENOSYS*/
+	return -ENOSYS;
 }
 
 int sys_getpid()
 {
 	return current()->PID;
 }
+
+int ret_from_fork() {
+    return 0;
+}
+
 
 int sys_fork()
 {
@@ -49,40 +54,72 @@ int sys_fork()
     struct task_struct *t = list_entry(e, struct task_struct, list);
     list_del(e);
     
-    /* copy parent PCB into child's */
+    /* copy parent PCB and stack into child's */
     copy_data(current(), t, sizeof(union task_union));
+
     /* create new page table */
     allocate_DIR(t);
+
     /* search frames */
-    alloc_frame();
+    page_table_entry *current_pt = get_PT(current());
+    page_table_entry *new_pt = get_PT(t);
 
-    int pag; 
-    int new_ph_pag;
-    page_table_entry *process_PT = get_PT(t);
+    /* shared system pages and user code (init all pages) */
+    for (unsigned int pag = 0; pag < TOTAL_PAGES; pag++)
+        new_pt[pag] = current_pt[pag];
 
-
-    /* CODE */
-    for (pag=0;pag<NUM_PAG_CODE;pag++){
-        new_ph_pag=alloc_frame();
-        process_PT[PAG_LOG_INIT_CODE+pag].entry = 0;
-        process_PT[PAG_LOG_INIT_CODE+pag].bits.pbase_addr = new_ph_pag;
-        process_PT[PAG_LOG_INIT_CODE+pag].bits.user = 1;
-        process_PT[PAG_LOG_INIT_CODE+pag].bits.present = 1;
+    /* new user data pages */ 
+    for (unsigned int pag = 0; pag < NUM_PAG_DATA; pag++) {
+        new_pt[PAG_LOG_INIT_DATA + pag].entry = 0;
+        new_pt[PAG_LOG_INIT_DATA + pag].bits.pbase_addr = alloc_frame();
+        new_pt[PAG_LOG_INIT_DATA + pag].bits.user = 1;
+        new_pt[PAG_LOG_INIT_DATA + pag].bits.rw = 1;
+        new_pt[PAG_LOG_INIT_DATA + pag].bits.present = 1;
     }
     
-    /* DATA */ 
-    for (pag=0;pag<NUM_PAG_DATA;pag++){
-        new_ph_pag=alloc_frame();
-        process_PT[PAG_LOG_INIT_DATA+pag].entry = 0;
-        process_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr = new_ph_pag;
-        process_PT[PAG_LOG_INIT_DATA+pag].bits.user = 1;
-        process_PT[PAG_LOG_INIT_DATA+pag].bits.rw = 1;
-        process_PT[PAG_LOG_INIT_DATA+pag].bits.present = 1;
+    /* copy parent data to child */
+    /* -> temp map child data to current pt */
+    for (unsigned int pag = 0; pag < NUM_PAG_DATA; pag++) {
+        set_ss_pag(
+            current_pt,
+            PAG_LOG_INIT_CODE + NUM_PAG_CODE + pag,         /* parent page */
+            new_pt[PAG_LOG_INIT_DATA + pag].bits.pbase_addr /* child frame */
+        );
     }
+
+    /* -> copy data */
+    copy_data(
+        (const void*)L_USER_START,
+        (void*)(L_USER_START + (PAGE_SIZE * (NUM_PAG_DATA + NUM_PAG_CODE))),
+        PAGE_SIZE * NUM_PAG_DATA
+    );
+
+    /* -> undo temp mappings */
+    for (unsigned int pag = 0; pag < NUM_PAG_DATA; pag++) {
+        del_ss_pag(
+            current_pt,
+            PAG_LOG_INIT_CODE + NUM_PAG_CODE + pag /* parent page */
+        );
+    }
+
+    /* flush TLB */
+    set_cr3(current()->dir_pages_baseAddr);
+
+    /* assign PID */
+    PID = current()->PID + 1;
+    t->PID = PID;
+
+    /* prepare child system stack to go to fork return 0 */
+    long unsigned int *new_sys_stack = ((union task_union*)t)->stack;
+    new_sys_stack[KERNEL_STACK_SIZE - 17] = (long unsigned int)ret_from_fork;  /* ra */
+    new_sys_stack[KERNEL_STACK_SIZE - 18] = 0;              /* ebp */
+
+    t->kernel_esp = &new_sys_stack[KERNEL_STACK_SIZE - 18];
+
+    /* insert new process into ready_queue */
+    list_add(&t->list, &readyqueue);
     
-    
-    // creates the child process
-    
+    /* return PID of child */
     return PID;
 }
 

@@ -30,6 +30,16 @@ int __attribute__ ((__section__(".text.main")))
     write(1, "pid=", 4);
     write(1, &pid, 1);
     write(1, "\n", 1);
+
+    int cpid = fork();
+    if (cpid == 0) {
+        write(1, "child\n", 6);
+    } else {
+        char ccpid = cpid + '0';
+        write(1, "parent, child pid = ", 20);
+        write(1, &ccpid, 1);
+        write(1, "\n", 1);
+    }
     
     while(1) { }
 }

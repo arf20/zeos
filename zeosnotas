@@ -60,10 +60,28 @@ syscall args EDX, ECX, EBX, ESI, EDI, EBP. result EAX
 [X] Implement the task_switch function.
 [X] Implement the inner_task_switch function.
 [X] Test task switching
-[ ] Implement the getpid system call.
-[ ] Implement the fork system call.
+[X] Implement the getpid system call.
+[X] Implement the fork system call.
 [ ] Implement process scheduling.
 [ ] Implement the exit system call.
 [ ] Implement the block system call.
 [ ] Implement the unblock system call.
+
+
+sys_fork memory map
+0   +---------------+                          +-------------------+
+    | sys           |                          | sys               |
+    |               |                          |                   |
+    |  code + data  |                          |     code + data   |
+    |               |                          |                   |
+    |               |                          |                   |
+256 +---------------+                          +-------------------+
+    | usr parent    |                          |      ...          |
+    |     data      |                  . . . . +-------------------+
+276 +---------------+            . . .         |  user child data  |
+    | usr par code  |      . . .               |                   |
+284 #===============# . . .            . . . . +-------------------+
+    # usr child     #            . . .         |      ...          |
+    #     data      #      . . .               |                   |
+    #===============# . . .                    +-------------------+
 

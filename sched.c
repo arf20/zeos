@@ -25,6 +25,8 @@ struct list_head readyqueue;
 
 struct task_struct *idle_task;
 
+static int current_quantum;
+
 
 /* get_DIR - Returns the Page Directory address for task 't' */
 page_table_entry *get_DIR(struct task_struct *t) 
@@ -129,5 +131,29 @@ void inner_task_switch(union task_union *new)
     save_ebp(&current()->kernel_esp);
    
     inner_task_return(); /* call inner_task_return */
+}
+
+void sched_next_rr()
+{
+
+    update_process_state();
+}
+
+void update_process_state_rr(struct task_struct *t, struct list_head *dest)
+{
+    if (t->state == ST_RUN)
+        return;
+    list_del(t->list);
+    list_add(t, dest);
+}
+
+int needs_sched_rr()
+{
+    return current_quantum == 0 ? 1 : 0;
+}
+
+void update_sched_data_rr()
+{
+    current_quantum--;
 }
 

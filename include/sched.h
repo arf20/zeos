@@ -20,7 +20,9 @@ struct task_struct {
     page_table_entry *dir_pages_baseAddr;
     void *kernel_esp;
     struct list_head list;
-
+   
+    state_t state;
+    int quantum;
 };
 
 union task_union {
