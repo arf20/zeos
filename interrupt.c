@@ -121,7 +121,7 @@ void clock_routine(void)
 {
     zeos_show_clock();
     zeos_ticks++;
-    update_sched_data_rr();
+    schedule();
 }
 
 void page_fault_routine_new(unsigned int eip)

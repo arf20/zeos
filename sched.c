@@ -7,6 +7,9 @@
 #include <io.h>
 #include <task_switch.h>
 #include <hardware.h>
+#include <util.h>
+
+#define DEFAULT_QUANTUM 100
 
 union task_union task[NR_TASKS]
   __attribute__((__section__(".data.task")));
@@ -25,7 +28,7 @@ struct list_head readyqueue;
 
 struct task_struct *idle_task;
 
-static int current_quantum;
+static int current_quantum = DEFAULT_QUANTUM;
 
 
 /* get_DIR - Returns the Page Directory address for task 't' */
@@ -75,6 +78,8 @@ void init_idle(void)
 
     //save_ebp(&idle_task->kernel_esp);
     idle_task->kernel_esp = &idle_stack[1022];
+
+    idle_task->quantum = DEFAULT_QUANTUM;
 }
 
 void init_task1(void)
@@ -96,13 +101,15 @@ void init_task1(void)
 
     /* set cr3 to this process table */
     set_cr3(t->dir_pages_baseAddr);
+
+    t->quantum = DEFAULT_QUANTUM;
 }
 
 void init_sched()
 {
     INIT_LIST_HEAD(&freequeue);
     for (int i = 0; i < NR_TASKS; i++)
-        list_add(&task[i].task.list, &freequeue);
+        list_add_tail(&task[i].task.list, &freequeue);
 
     INIT_LIST_HEAD(&readyqueue);
 }
@@ -119,6 +126,15 @@ struct task_struct *current()
 }
 
 
+int get_quantum(struct task_struct *t)
+{
+    return t->quantum;
+}
+
+void set_quantum(struct task_struct *t, int quantum)
+{
+    t->quantum = quantum;
+}
 
 void inner_task_switch(union task_union *new)
 {
@@ -133,18 +149,41 @@ void inner_task_switch(union task_union *new)
     inner_task_return(); /* call inner_task_return */
 }
 
-void sched_next_rr()
-{
-
-    update_process_state();
-}
-
 void update_process_state_rr(struct task_struct *t, struct list_head *dest)
 {
-    if (t->state == ST_RUN)
+    
+    if (t != current())
+        list_del(&t->list);
+
+    if (!dest) {
+        t->state = ST_RUN;
         return;
-    list_del(t->list);
-    list_add(t, dest);
+    }
+    list_add_tail(&t->list, dest);
+
+    if (dest == &readyqueue)
+        t->state = ST_READY;
+    else if (dest == &blocked)
+        t->state = ST_BLOCKED;
+}
+
+void sched_next_rr()
+{
+    union task_union *next = NULL;
+    struct list_head *entry = list_first(&readyqueue);
+    if (entry) {
+        next = (union task_union*)list_entry(entry, struct task_struct, list);
+        list_del(entry);
+    }
+    else
+        next = (union task_union*)idle_task;
+
+    set_quantum(current(), DEFAULT_QUANTUM);
+    if (current() != idle_task)
+        update_process_state_rr(current(), &readyqueue);
+    
+    current_quantum = get_quantum(&next->task);
+    task_switch(next);
 }
 
 int needs_sched_rr()
@@ -155,5 +194,18 @@ int needs_sched_rr()
 void update_sched_data_rr()
 {
     current_quantum--;
+}
+
+
+void schedule()
+{
+    printk("current pid: ");
+    printk(utoa(current()->PID, 10));
+    printk("\n");
+
+    update_sched_data_rr();
+    if (needs_sched_rr()) {
+        sched_next_rr();
+    }
 }
 
