@@ -69,3 +69,11 @@ kesp>   1022    %ebp = 0
         1023    ra   -> cpu_idle
 */
 
+
+
+
+ENTRY(ret_from_fork)
+    xor %eax, %eax
+    popl %ebp
+    ret
+

@@ -4,6 +4,7 @@
 void save_ebp(void *target);
 void task_switch(union task_union *new);
 void inner_task_return(void);
+int ret_from_fork(void);
 
 #endif /* _TASK_SWITCH_H */
 

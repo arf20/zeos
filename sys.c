@@ -8,6 +8,7 @@
 #include <mm_address.h>
 #include <sched.h>
 #include <errno.h>
+#include <task_switch.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
@@ -38,9 +39,9 @@ int sys_getpid()
 	return current()->PID;
 }
 
-int ret_from_fork() {
+/*int ret_from_fork() {
     return 0;
-}
+}*/
 
 
 int sys_fork()
@@ -111,10 +112,12 @@ int sys_fork()
 
     /* prepare child system stack to go to fork return 0 */
     long unsigned int *new_sys_stack = ((union task_union*)t)->stack;
-    new_sys_stack[KERNEL_STACK_SIZE - 17] = (long unsigned int)ret_from_fork;  /* ra */
-    new_sys_stack[KERNEL_STACK_SIZE - 18] = 0;              /* ebp */
+    new_sys_stack[KERNEL_STACK_SIZE-19] = (long unsigned int)ret_from_fork;  /* ra */
+    new_sys_stack[KERNEL_STACK_SIZE-20] = 0;              /* ebp */
 
-    t->kernel_esp = &new_sys_stack[KERNEL_STACK_SIZE - 18];
+    t->kernel_esp = &new_sys_stack[KERNEL_STACK_SIZE-20];
+
+    /* 1008 y 1007 */
 
     /* insert new process into ready_queue */
     list_add(&t->list, &readyqueue);

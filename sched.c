@@ -103,6 +103,9 @@ void init_task1(void)
     set_cr3(t->dir_pages_baseAddr);
 
     t->quantum = DEFAULT_QUANTUM;
+    t->state = ST_READY;
+
+    list_add_tail(e, &readyqueue);
 }
 
 void init_sched()
@@ -183,7 +186,8 @@ void sched_next_rr()
         update_process_state_rr(current(), &readyqueue);
     
     current_quantum = get_quantum(&next->task);
-    task_switch(next);
+    if (next != current())
+        task_switch(next);
 }
 
 int needs_sched_rr()
