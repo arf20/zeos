@@ -11,6 +11,15 @@ x $esp+28
 x $esp+32
 x $esp+36
 x $esp+40
+x $esp+44
+x $esp+48
+x $esp+52
+x $esp+56
+x $esp+60
+x $esp+64
+x $esp+68
+x $esp+72
+x $esp+76
 end
 document print-stack
 Print the latest values from the top of the stack

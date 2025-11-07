@@ -74,6 +74,5 @@ kesp>   1022    %ebp = 0
 
 ENTRY(ret_from_fork)
     xor %eax, %eax
-    popl %ebp
     ret
 
