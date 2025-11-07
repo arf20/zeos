@@ -62,7 +62,7 @@ syscall args EDX, ECX, EBX, ESI, EDI, EBP. result EAX
 [X] Test task switching
 [X] Implement the getpid system call.
 [X] Implement the fork system call.
-[W] Implement process scheduling.
+[X] Implement process scheduling.
 [ ] Implement the exit system call.
 [ ] Implement the block system call.
 [ ] Implement the unblock system call.

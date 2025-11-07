@@ -104,8 +104,6 @@ void init_task1(void)
 
     t->quantum = DEFAULT_QUANTUM;
     t->state = ST_READY;
-
-    list_add_tail(e, &readyqueue);
 }
 
 void init_sched()
