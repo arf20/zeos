@@ -174,7 +174,7 @@ void sched_next_rr()
 {
     union task_union *next = NULL;
     struct list_head *entry = list_first(&readyqueue);
-    if (entry) {
+    if (entry != &readyqueue) {
         next = (union task_union*)list_entry(entry, struct task_struct, list);
         list_del(entry);
     }

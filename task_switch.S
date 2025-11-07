@@ -43,10 +43,11 @@ ENTRY(task_switch)
     pushl   %ebx
     pushl   16(%esp)
     call    inner_task_switch
-    sub     -4, %esp
+    add     $4, %esp
     popl    %ebx
     popl    %edi
     popl    %esi
+    ret
 
    
 /*
