@@ -142,8 +142,8 @@ void set_quantum(struct task_struct *t, int quantum)
 void inner_task_switch(union task_union *new)
 {
     /* set new sysenter system stack */
-    tss.esp0 = (DWord)new->stack[1023];
-    write_msr(0x175, (DWord)new->stack, 0);
+    tss.esp0 = (DWord)&new->stack[1023];
+    write_msr(0x175, tss.esp0, 0);
     /* set new page table */
     set_cr3(new->task.dir_pages_baseAddr);
     /* sabe ebp */
