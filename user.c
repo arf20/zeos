@@ -34,13 +34,25 @@ int __attribute__ ((__section__(".text.main")))
     int cpid = fork();
     if (cpid == 0) {
         write(1, "child\n", 6);
+
+        while (gettime() - time < 1000) { }
+
+        exit();
+
+
     } else {
         char ccpid = cpid + '0';
         write(1, "parent, child pid = ", 20);
         write(1, &ccpid, 1);
         write(1, "\n", 1);
+
+
+        while (gettime() - time < 2000) { }
+
+        //exit();
     }
     
-    while(1) { }
+    
+    while (1) {};
 }
 

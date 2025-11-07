@@ -87,5 +87,7 @@ FAST_SYSCALL(write, 4)
 FAST_SYSCALL(getpid, 20)
 // int fork()
 FAST_SYSCALL(fork, 2)
+// void exit()
+FAST_SYSCALL(exit, 1)
 
 

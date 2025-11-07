@@ -67,6 +67,9 @@ syscall args EDX, ECX, EBX, ESI, EDI, EBP. result EAX
 [ ] Implement the block system call.
 [ ] Implement the unblock system call.
 
+    [ ] Cambiar write_msr a asm
+    [ ] Contexto hw son 5 words no 6 (?); contexto hardware debería pushear esp no ebp
+
 
 sys_fork memory map
 0   +---------------+                          +-------------------+

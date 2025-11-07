@@ -127,7 +127,19 @@ int sys_fork()
 }
 
 void sys_exit()
-{  
+{
+    page_table_entry *pt = get_PT(current());
+
+    /* free physical memory */
+    for (unsigned int pag = 0; pag < TOTAL_PAGES; pag++)
+        if (pt[pag].bits.present)
+            free_frame(pt[pag].bits.pbase_addr);
+
+    list_add(&current()->list, &freequeue);
+
+    current()->state = ST_EXITED;
+
+    sched_next_rr();
 }
 
 int sys_gettime()

@@ -174,13 +174,16 @@ void sched_next_rr()
     struct list_head *entry = list_first(&readyqueue);
     if (entry != &readyqueue) {
         next = (union task_union*)list_entry(entry, struct task_struct, list);
-        list_del(entry);
+        if (entry->next && entry->prev)
+            list_del(entry);
     }
+    else if (current()->state != ST_EXITED)
+        next = (union task_union*)current();
     else
         next = (union task_union*)idle_task;
 
     set_quantum(current(), DEFAULT_QUANTUM);
-    if (current() != idle_task)
+    if ((current() != idle_task) && (current()->state != ST_EXITED))
         update_process_state_rr(current(), &readyqueue);
     
     current_quantum = get_quantum(&next->task);
