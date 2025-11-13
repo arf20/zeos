@@ -63,7 +63,7 @@ syscall args EDX, ECX, EBX, ESI, EDI, EBP. result EAX
 [X] Implement the getpid system call.
 [X] Implement the fork system call.
 [X] Implement process scheduling.
-[ ] Implement the exit system call.
+[X] Implement the exit system call.
 [ ] Implement the block system call.
 [ ] Implement the unblock system call.
 
@@ -88,3 +88,13 @@ sys_fork memory map
     #     data      #      . . .               |                   |
     #===============# . . .                    +-------------------+
 
+_ init OK idle OK task_switch
+- inner_task_return no segueix convenció (dificil d'entendre: funcio sense parametre que l'agafa de la pila)
+getpid OK
+fork - cal comprovar si la llista freequeue esta buida abans d'accedir-hi
+- alloc_frame podria fallar, i caldria desfer la feina feta
+- caldria canviar estat fill a READY (o usar update_process_state) schedule
+- sched_next: potser t'interesaria usar 'list_empty' i NO s'haurien d'usar els camps de la llista manualment
+- sched_next: en cap cas hauria de processar un procés amb estat ST_EXITED. En cap cas, hauria de modificar l'estat del proces actual. Aquesta funció NOMÉS ha de seleccionar el proper procés a executar (el primer de la ready) i possar-lo en execució. I si la ready estava buida, llavors executar a l'idle, res més.
+- schedule: aquí és on s'hauria de possar el current a la ready exit - No haurieu d'alliberar TOTS els frames
+block/unblock KO (no fet)
