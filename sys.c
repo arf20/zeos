@@ -2,20 +2,14 @@
  * sys.c - Syscalls implementation
  */
 #include <devices.h>
-
 #include <utils.h>
-
 #include <io.h>
-
 #include <mm.h>
-
 #include <mm_address.h>
-
 #include <sched.h>
-
 #include <p_stats.h>
-
 #include <errno.h>
+#include <sys.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
@@ -236,3 +230,18 @@ int sys_get_stats(int pid, struct stats *st)
   }
   return -ESRCH; /*ESRCH */
 }
+
+
+event_t keybuff[KEYBUFF_SIZE];
+event_t *keyin, *keyout;
+
+int sys_poll_event(event_t *e) {
+    if (keyin == keyout)
+        return -EAGAIN;
+
+    *e = *(keyout++);
+    if (keyout > (&keybuff[KEYBUFF_SIZE - 1]))
+        keyout = keybuff;
+    return 0;
+}
+

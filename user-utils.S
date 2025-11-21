@@ -1,102 +1,66 @@
 #include <asm.h>
 
-ENTRY(syscall_sysenter)
-	push %ecx
-	push %edx
-	push $SYSENTER_RETURN
-	push %ebp
-	mov %esp, %ebp
-	sysenter
-ENTRY(SYSENTER_RETURN)
-	pop %ebp
-	pop %edx
-	pop %edx
-	pop %ecx
-	ret
+#define FAST_SYSCALL(name, num) \
+ENTRY(name)                     \
+    pushl   %ebp;               \
+    mov     %esp, %ebp;         \
+                                \
+    pushl   %ebx;               \
+    pushl   %esi;               \
+    pushl   %edi;               \
+                                \
+    mov     $num, %eax;         \
+                                \
+    mov     40(%esp), %ebp;     \
+    mov     36(%esp), %edi;     \
+    mov     32(%esp), %esi;     \
+    mov     28(%esp), %ebx;     \
+    mov     24(%esp), %ecx;     \
+    mov     20(%esp), %edx;     \
+                                \
+    pushl   $sysenter_return;   \
+    pushl   %ebp;               \
+    mov     %esp, %ebp;         \
+                                \
+    sysenter
 
-/* int write(int fd, char *buffer, int size) */
-ENTRY(write)
-	pushl %ebp
-	movl %esp, %ebp
-	pushl %ebx;  // Save EBX, ESI and EDI if modified
-	movl $4, %eax
-	movl 0x8(%ebp), %ebx;	//fd
-	movl 0xC(%ebp), %ecx;	//buffer
-	movl 0x10(%ebp), %edx;	//size
-	call syscall_sysenter
-	popl %ebx
-	test %eax, %eax
-	js nok	// if (eax < 0) -> 
-	popl %ebp
-	ret
+sysenter_return:
+    popl    %ebp
+    popl    %ecx
 
-/* Common code for negative return */
-nok:
-	neg %eax
-	mov %eax, errno
-	mov $-1, %eax
-	popl %ebp
-	ret
+    cmp     $0, %eax
+    jge     syscall_ret
 
-/* int gettime() */
-ENTRY(gettime)
-	pushl %ebp
-	movl %esp, %ebp
-	movl $10, %eax
-	call syscall_sysenter
-	popl %ebp
-	ret
+    neg     %eax
+    mov     %eax, errno
+    mov     $-1, %eax
 
-/* int getpid() */
-ENTRY(getpid)
-	pushl %ebp
-	movl %esp, %ebp
-	movl $20, %eax
-	call syscall_sysenter
-	popl %ebp
-	ret
+    jmp     syscall_ret
 
-/* int fork() */
-ENTRY(fork)
-	pushl %ebp
-	movl %esp, %ebp
-	movl $2, %eax
-	call syscall_sysenter
-	test %eax, %eax
-	js nok	// if (eax < 0) -->
-	popl %ebp
-	ret
+syscall_ret:
+    popl %edi
+    popl %esi
+    popl %ebx
+    popl %ebp
+ 
+    ret
+
 
 /* void exit() */
-ENTRY(exit)
-	pushl %ebp
-	movl %esp, %ebp
-	movl $1, %eax
-	call syscall_sysenter
-	popl %ebp
-	ret
-
+FAST_SYSCALL(exit, 1)
+/* int fork() */
+FAST_SYSCALL(fork, 2)
+/* int write(int fd, const void buf, size_t count) */
+FAST_SYSCALL(write, 4)
+/* int gettime() */
+FAST_SYSCALL(gettime, 10)
 /* int yield() */
-ENTRY(yield)
-	pushl %ebp
-	movl %esp, %ebp
-	movl $13, %eax
-	call syscall_sysenter
-	popl %ebp
-	ret
-
+FAST_SYSCALL(yield, 13)
+/* int getpid() */
+FAST_SYSCALL(getpid, 20)
 /* int get_stats(int pid, struct stats *st) */
-ENTRY(get_stats)
-	pushl %ebp
-	movl %esp, %ebp
-	pushl %ebx;  // Save EBX, ESI and EDI if modified
-	movl $35, %eax
-	movl 0x8(%ebp), %ebx;	//pid
-	movl 0xC(%ebp), %ecx;	//st
-	call syscall_sysenter
-	popl %ebx
-	test %eax, %eax
-	js nok	// if (eax < 0) -->
-	popl %ebp
-	ret
+FAST_SYSCALL(get_stats, 35)
+/* int poll_event(event_t *e) */
+FAST_SYSCALL(poll_event, 35)
+
 

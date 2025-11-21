@@ -7,6 +7,7 @@
 #define __LIBC_H__
 
 #include <stats.h>
+#include <types.h>
 
 extern int errno;
 
@@ -27,5 +28,7 @@ void exit();
 int yield();
 
 int get_stats(int pid, struct stats *st);
+
+int poll_event(event_t *e);
 
 #endif  /* __LIBC_H__ */

@@ -8,6 +8,7 @@
 #include <io.h>
 
 #include <sched.h>
+#include <sys.h>
 
 #include <zeos_interrupt.h>
 
@@ -43,9 +44,16 @@ void clock_routine()
 
 void keyboard_routine()
 {
-  unsigned char c = inb(0x60);
-  
-  if (c&0x80) printc_xy(0, 0, char_map[c&0x7f]);
+    unsigned char c = inb(0x60);
+    
+    event_t e = {
+      .pressed = (c & 0x80) >> 7,
+      .scancode = c & 0x7f
+    };
+
+    *(keyin++) = e;
+    if (keyin > (&keybuff[KEYBUFF_SIZE - 1]))
+        keyin = keybuff;
 }
 
 void setInterruptHandler(int vector, void (*handler)(), int maxAccessibleFromPL)

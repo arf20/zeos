@@ -151,5 +151,11 @@ typedef union
   } bits;
 } page_table_entry;
 
+#define KEYBUFF_SIZE    16
+
+typedef struct {
+    int pressed;
+    char scancode;
+} event_t;
 
 #endif  /* __TYPES_H__ */
