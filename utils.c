@@ -3,10 +3,9 @@
 
 #include <mm_address.h>
 
-void copy_data(const void *start, void *dest, int size)
+void copy_data(void *start, void *dest, int size)
 {
-  const DWord *p = start;
-  DWord *q = dest;
+  DWord *p = start, *q = dest;
   Byte *p1, *q1;
   while(size > 4) {
     *q++ = *p++;
@@ -20,10 +19,9 @@ void copy_data(const void *start, void *dest, int size)
   }
 }
 /* Copia de espacio de usuario a espacio de kernel, devuelve 0 si ok y -1 si error*/
-int copy_from_user(const void *start, void *dest, int size)
+int copy_from_user(void *start, void *dest, int size)
 {
-  const DWord *p = start;
-  DWord *q = dest;
+  DWord *p = start, *q = dest;
   Byte *p1, *q1;
   while(size > 4) {
     *q++ = *p++;
@@ -38,10 +36,9 @@ int copy_from_user(const void *start, void *dest, int size)
   return 0;
 }
 /* Copia de espacio de kernel a espacio de usuario, devuelve 0 si ok y -1 si error*/
-int copy_to_user(const void *start, void *dest, int size)
+int copy_to_user(void *start, void *dest, int size)
 {
-  const DWord *p = start;
-  DWord *q = dest;
+  DWord *p = start, *q = dest;
   Byte *p1, *q1;
   while(size > 4) {
     *q++ = *p++;
@@ -77,8 +74,8 @@ int access_ok(int type, const void * addr, unsigned long size)
   {
     case VERIFY_WRITE:
       /* Should suppose no support for automodifyable code */
-      if ((addr_ini>=USER_FIRST_PAGE)&&
-          (addr_fin<=USER_FIRST_PAGE+NUM_PAG_DATA))
+      if ((addr_ini>=USER_FIRST_PAGE+NUM_PAG_CODE)&&
+          (addr_fin<=USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA))
 	  return 1;
     default:
       if ((addr_ini>=USER_FIRST_PAGE)&&
@@ -132,4 +129,16 @@ unsigned long get_ticks(void) {
         do_div(ticks,CYCLESPERTICK);
 
         return ticks;
+}
+
+void memset(void *s, unsigned char c, int size)
+{
+  unsigned char *m=(unsigned char *)s;
+  
+  int i;
+  
+  for (i=0; i<size; i++)
+  {
+    m[i]=c;
+  }
 }

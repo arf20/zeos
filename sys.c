@@ -2,36 +2,46 @@
  * sys.c - Syscalls implementation
  */
 #include <devices.h>
+
 #include <utils.h>
+
 #include <io.h>
+
 #include <mm.h>
+
 #include <mm_address.h>
+
 #include <sched.h>
+
+#include <p_stats.h>
+
 #include <errno.h>
-#include <task_switch.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
 
-#define MIN(x, y)   (x > y ? y : x)
-
-#define IOBS    4096
-static char iobuffer[IOBS];
-
-extern int zeos_ticks;
+void * get_ebp();
 
 int check_fd(int fd, int permissions)
 {
-    if (fd != 1)
-        return -EBADFD;
-    if (permissions != ESCRIPTURA)
-        return -EACCES;
-    return 0;
+  if (fd!=1) return -EBADF; 
+  if (permissions!=ESCRIPTURA) return -EACCES; 
+  return 0;
+}
+
+void user_to_system(void)
+{
+  update_stats(&(current()->p_stats.user_ticks), &(current()->p_stats.elapsed_total_ticks));
+}
+
+void system_to_user(void)
+{
+  update_stats(&(current()->p_stats.system_ticks), &(current()->p_stats.elapsed_total_ticks));
 }
 
 int sys_ni_syscall()
 {
-	return -ENOSYS;
+	return -ENOSYS; 
 }
 
 int sys_getpid()
@@ -39,137 +49,190 @@ int sys_getpid()
 	return current()->PID;
 }
 
-/*int ret_from_fork() {
-    return 0;
-}*/
+int global_PID=1000;
 
-
-int sys_fork()
+int ret_from_fork()
 {
-    int PID = -1;
-
-    /* get a free PCB */
-    struct list_head *e = list_first(&freequeue);
-    if (!e)
-        return -EAGAIN;
-    struct task_struct *t = list_entry(e, struct task_struct, list);
-    list_del(e);
-    
-    /* copy parent PCB and stack into child's */
-    copy_data(current(), t, sizeof(union task_union));
-
-    /* create new page table */
-    allocate_DIR(t);
-
-    /* search frames */
-    page_table_entry *current_pt = get_PT(current());
-    page_table_entry *new_pt = get_PT(t);
-
-    /* shared system pages and user code (init all pages) */
-    for (unsigned int pag = 0; pag < TOTAL_PAGES; pag++)
-        new_pt[pag] = current_pt[pag];
-
-    /* new user data pages */ 
-    for (unsigned int pag = 0; pag < NUM_PAG_DATA; pag++) {
-        new_pt[PAG_LOG_INIT_DATA + pag].entry = 0;
-        new_pt[PAG_LOG_INIT_DATA + pag].bits.pbase_addr = alloc_frame();
-        new_pt[PAG_LOG_INIT_DATA + pag].bits.user = 1;
-        new_pt[PAG_LOG_INIT_DATA + pag].bits.rw = 1;
-        new_pt[PAG_LOG_INIT_DATA + pag].bits.present = 1;
-    }
-    
-    /* copy parent data to child */
-    /* -> temp map child data to current pt */
-    for (unsigned int pag = 0; pag < NUM_PAG_DATA; pag++) {
-        set_ss_pag(
-            current_pt,
-            PAG_LOG_INIT_CODE + NUM_PAG_CODE + pag,         /* parent page */
-            new_pt[PAG_LOG_INIT_DATA + pag].bits.pbase_addr /* child frame */
-        );
-    }
-
-    /* -> copy data */
-    copy_data(
-        (const void*)L_USER_START,
-        (void*)(L_USER_START + (PAGE_SIZE * (NUM_PAG_DATA + NUM_PAG_CODE))),
-        PAGE_SIZE * NUM_PAG_DATA
-    );
-
-    /* -> undo temp mappings */
-    for (unsigned int pag = 0; pag < NUM_PAG_DATA; pag++) {
-        del_ss_pag(
-            current_pt,
-            PAG_LOG_INIT_CODE + NUM_PAG_CODE + pag /* parent page */
-        );
-    }
-
-    /* flush TLB */
-    set_cr3(current()->dir_pages_baseAddr);
-
-    /* assign PID */
-    PID = current()->PID + 1;
-    t->PID = PID;
-
-    /* prepare child system stack to go to fork return 0 */
-    long unsigned int *new_sys_stack = ((union task_union*)t)->stack;
-    new_sys_stack[KERNEL_STACK_SIZE-19] = (long unsigned int)ret_from_fork;  /* ra */
-    new_sys_stack[KERNEL_STACK_SIZE-20] = 0;              /* ebp */
-
-    t->kernel_esp = &new_sys_stack[KERNEL_STACK_SIZE-20];
-
-    /* 1008 y 1007 */
-
-    /* insert new process into ready_queue */
-    list_add(&t->list, &readyqueue);
-    
-    /* return PID of child */
-    return PID;
+  return 0;
 }
 
-void sys_exit()
+int sys_fork(void)
 {
-    page_table_entry *pt = get_PT(current());
+  struct list_head *lhcurrent = NULL;
+  union task_union *uchild;
+  
+  /* Any free task_struct? */
+  if (list_empty(&freequeue)) return -ENOMEM;
 
-    /* free physical memory */
-    for (unsigned int pag = 0; pag < TOTAL_PAGES; pag++)
-        if (pt[pag].bits.present)
-            free_frame(pt[pag].bits.pbase_addr);
+  lhcurrent=list_first(&freequeue);
+  
+  list_del(lhcurrent);
+  
+  uchild=(union task_union*)list_head_to_task_struct(lhcurrent);
+  
+  /* Copy the parent's task struct to child's */
+  copy_data(current(), uchild, sizeof(union task_union));
+  
+  /* new pages dir */
+  allocate_DIR((struct task_struct*)uchild);
+  
+  /* Allocate pages for DATA+STACK */
+  int new_ph_pag, pag, i;
+  page_table_entry *process_PT = get_PT(&uchild->task);
+  for (pag=0; pag<NUM_PAG_DATA; pag++)
+  {
+    new_ph_pag=alloc_frame();
+    if (new_ph_pag!=-1) /* One page allocated */
+    {
+      set_ss_pag(process_PT, PAG_LOG_INIT_DATA+pag, new_ph_pag);
+    }
+    else /* No more free pages left. Deallocate everything */
+    {
+      /* Deallocate allocated pages. Up to pag. */
+      for (i=0; i<pag; i++)
+      {
+        free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
+        del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
+      }
+      /* Deallocate task_struct */
+      list_add_tail(lhcurrent, &freequeue);
+      
+      /* Return error */
+      return -EAGAIN; 
+    }
+  }
 
-    list_add(&current()->list, &freequeue);
+  /* Copy parent's SYSTEM and CODE to child. */
+  page_table_entry *parent_PT = get_PT(current());
+  for (pag=0; pag<NUM_PAG_KERNEL; pag++)
+  {
+    set_ss_pag(process_PT, pag, get_frame(parent_PT, pag));
+  }
+  for (pag=0; pag<NUM_PAG_CODE; pag++)
+  {
+    set_ss_pag(process_PT, PAG_LOG_INIT_CODE+pag, get_frame(parent_PT, PAG_LOG_INIT_CODE+pag));
+  }
+  /* Copy parent's DATA to child. We will use TOTAL_PAGES-1 as a temp logical page to map to */
+  for (pag=NUM_PAG_KERNEL+NUM_PAG_CODE; pag<NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA; pag++)
+  {
+    /* Map one child page to parent's address space. */
+    set_ss_pag(parent_PT, pag+NUM_PAG_DATA, get_frame(process_PT, pag));
+    copy_data((void*)(pag<<12), (void*)((pag+NUM_PAG_DATA)<<12), PAGE_SIZE);
+    del_ss_pag(parent_PT, pag+NUM_PAG_DATA);
+  }
+  /* Deny access to the child's memory space */
+  set_cr3(get_DIR(current()));
 
-    current()->state = ST_EXITED;
+  uchild->task.PID=++global_PID;
+  uchild->task.state=ST_READY;
 
-    sched_next_rr();
+  int register_ebp;		/* frame pointer */
+  /* Map Parent's ebp to child's stack */
+  register_ebp = (int) get_ebp();
+  register_ebp=(register_ebp - (int)current()) + (int)(uchild);
+
+  uchild->task.register_esp=register_ebp + sizeof(DWord);
+
+  DWord temp_ebp=*(DWord*)register_ebp;
+  /* Prepare child stack for context switch */
+  uchild->task.register_esp-=sizeof(DWord);
+  *(DWord*)(uchild->task.register_esp)=(DWord)&ret_from_fork;
+  uchild->task.register_esp-=sizeof(DWord);
+  *(DWord*)(uchild->task.register_esp)=temp_ebp;
+
+  /* Set stats to 0 */
+  init_stats(&(uchild->task.p_stats));
+
+  /* Queue child process into readyqueue */
+  uchild->task.state=ST_READY;
+  list_add_tail(&(uchild->task.list), &readyqueue);
+  
+  return uchild->task.PID;
 }
+
+#define TAM_BUFFER 512
+
+int sys_write(int fd, char *buffer, int nbytes) {
+char localbuffer [TAM_BUFFER];
+int bytes_left;
+int ret;
+
+	if ((ret = check_fd(fd, ESCRIPTURA)))
+		return ret;
+	if (nbytes < 0)
+		return -EINVAL;
+	if (!access_ok(VERIFY_READ, buffer, nbytes))
+		return -EFAULT;
+	
+	bytes_left = nbytes;
+	while (bytes_left > TAM_BUFFER) {
+		copy_from_user(buffer, localbuffer, TAM_BUFFER);
+		ret = sys_write_console(localbuffer, TAM_BUFFER);
+		bytes_left-=ret;
+		buffer+=ret;
+	}
+	if (bytes_left > 0) {
+		copy_from_user(buffer, localbuffer,bytes_left);
+		ret = sys_write_console(localbuffer, bytes_left);
+		bytes_left-=ret;
+	}
+	return (nbytes-bytes_left);
+}
+
+
+extern int zeos_ticks;
 
 int sys_gettime()
 {
-    return zeos_ticks;
+  return zeos_ticks;
 }
 
-int sys_write(int fd, const void *buf, int count)
+void sys_exit()
+{  
+  int i;
+
+  page_table_entry *process_PT = get_PT(current());
+
+  // Deallocate all the propietary physical pages
+  for (i=0; i<NUM_PAG_DATA; i++)
+  {
+    free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
+    del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
+  }
+  
+  /* Free task_struct */
+  list_add_tail(&(current()->list), &freequeue);
+  
+  current()->PID=-1;
+  
+  /* Restarts execution of the next process */
+  sched_next_rr();
+}
+
+/* System call to force a task switch */
+int sys_yield()
 {
-    /* check arguemnts */
-    int cfdr = check_fd(fd, ESCRIPTURA);
-    if (cfdr < 0)
-        return cfdr;
-    if (!buf)
-        return -EFAULT;
-    if (count < 0)
-        return -EINVAL;
-
-    /* print data 1 block at a time */
-    int written = 0, sysr = 0;
-    for (; count > 0;) {
-        copy_from_user(buf, iobuffer, IOBS);
-        buf += IOBS; /* next block */
-        sysr = sys_write_console(iobuffer, MIN(IOBS, count));
-        if (sysr < 0)
-            return sysr;
-        written += sysr;
-        count -= IOBS;
-    }
-
-    return written;
+  force_task_switch();
+  return 0;
 }
 
+extern int remaining_quantum;
+
+int sys_get_stats(int pid, struct stats *st)
+{
+  int i;
+  
+  if (!access_ok(VERIFY_WRITE, st, sizeof(struct stats))) return -EFAULT; 
+  
+  if (pid<0) return -EINVAL;
+  for (i=0; i<NR_TASKS; i++)
+  {
+    if (task[i].task.PID==pid)
+    {
+      task[i].task.p_stats.remaining_ticks=remaining_quantum;
+      copy_to_user(&(task[i].task.p_stats), st, sizeof(struct stats));
+      return 0;
+    }
+  }
+  return -ESRCH; /*ESRCH */
+}

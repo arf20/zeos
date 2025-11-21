@@ -103,7 +103,7 @@ __asm__ __volatile__(
   "call delay\n\t"
   "sti"
   : /*no output*/
-  : "i" (0xfc)       /* 0xFC = 11111100 */
+  : "i" (0xfc)       /* 0xFF = 11111111 -> all bits disabled */
   : "%al" );
 }
 
@@ -112,14 +112,5 @@ void delay(void)
 __asm__ __volatile__(
   "jmp a\na:\t"
   : : );
-}
-
-void write_msr(DWord msrnum, DWord low, DWord high)
-{
-__asm__ __volatile__(
-    "wrmsr"
-    :
-    : "a" (low), "d" (high), "c" (msrnum)
-);
 }
 

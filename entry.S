@@ -17,9 +17,9 @@
 /**                                              **/
 /** Stack layout in 'systemCall':                **/
 /**                                              **/
-/**   0(%esp) - %edx    \                        **/
+/**   0(%esp) - %ebx    \                        **/
 /**   4(%esp) - %ecx     |                       **/
-/**   8(%esp) - %ebx     |                       **/
+/**   8(%esp) - %edx     |                       **/
 /**   C(%esp) - %esi     | Register saved        **/
 /**  10(%esp) - %edi     |  by 'save'            **/
 /**  14(%esp) - %ebp     |                       **/
@@ -37,106 +37,83 @@
 /**************************************************/
 
 #define SAVE_ALL \
-    pushl   %gs; \
-    pushl   %fs; \
-    pushl   %es; \
-    pushl   %ds; \
-    pushl   %eax; \
-    pushl   %ebp; \
-    pushl   %edi; \
-    pushl   %esi; \
-    pushl   %ebx; \
-    pushl   %ecx; \
-    pushl   %edx; \
-    movl    $__KERNEL_DS, %edx; \
-    movl    %edx, %ds; \
-    movl    %edx, %es;
+      pushl %gs; \
+      pushl %fs; \
+      pushl %es; \
+      pushl %ds; \
+      pushl %eax; \
+      pushl %ebp; \
+      pushl %edi; \
+      pushl %esi; \
+      pushl %edx; \
+      pushl %ecx; \
+      pushl %ebx; \
+      movl $__KERNEL_DS, %edx;    \
+      movl %edx, %ds;           \
+      movl %edx, %es
 
 #define RESTORE_ALL \
-    popl    %edx; \
-    popl    %ecx; \
-    popl    %ebx; \
-    popl    %esi; \
-    popl    %edi; \
-    popl    %ebp; \
-    popl    %eax; \
-    popl    %ds; \
-    popl    %es; \
-    popl    %fs; \
-    popl    %gs;
+      popl %ebx;   \
+      popl %ecx;   \
+      popl %edx;   \
+      popl %esi;   \
+      popl %edi;   \
+      popl %ebp;   \
+      popl %eax;   \
+      popl %ds;    \
+      popl %es;    \
+      popl %fs;    \
+      popl %gs;
 
-/* indicates to APIC ok for more interrupts */
 #define EOI \
-    movb $0x20, %al ; \
-    outb %al, $0x20 ;
-
-
-ENTRY(keyboard_handler)
-    SAVE_ALL
-    EOI
-    call keyboard_routine
-    RESTORE_ALL
-    iret
+      movb $0x20, %al; \
+      outb %al, $0x20;
 
 ENTRY(clock_handler)
-    SAVE_ALL
-    EOI
-    call clock_routine
-    RESTORE_ALL
-    iret
+      SAVE_ALL
+      pushl %eax;
+      call user_to_system;
+      popl %eax;
+      EOI
+      call clock_routine;
+      pushl %eax;
+      call system_to_user;
+      popl %eax;
+      RESTORE_ALL
+      iret;
 
-ENTRY(page_fault_handler_new)
-    SAVE_ALL
-    mov     0x30(%esp), %eax    // retrieve error code pushed on top of eip
-    pushl   %eax                // pass as argument to routine cdelc
-    call page_fault_routine_new
-    popl    %eax                // remove parameter
-    RESTORE_ALL
-    add     $-4, %esp            // clear error
-    iret
+ENTRY(keyboard_handler)
+      SAVE_ALL
+      pushl %eax;
+      call user_to_system;
+      popl %eax;
+      EOI
+      call keyboard_routine;
+      pushl %eax;
+      call system_to_user;
+      popl %eax;
+      RESTORE_ALL
+      iret;
 
-ENTRY(syscall_handler)
-    SAVE_ALL
-    cmpl $0, %eax
-    jl err
-    cmpl $max_syscall, %eax
-    jg err
-    call *sys_call_table(, %eax, 0x04)
-    jmp fin
-err:
-    movl $-ENOSYS, %eax
-fin:
-    movl %eax, 0x18(%esp)
-    RESTORE_ALL
-    iret
-
-ENTRY(fast_syscall_handler)
-    pushl   $__USER_DS
-    pushl   %ebp
-    pushfl
-    pushl   $__USER_CS
-    pushl   4(%ebp)
-
-    SAVE_ALL
-
-    cmpl $0, %eax
-    jl enosys
-    cmpl $max_syscall, %eax
-    jg enosys
-
-    call *sys_call_table(, %eax, 0x04)
-    jmp fast_syscall_handler_end
-
-enosys:
-    movl $-ENOSYS, %eax
-fast_syscall_handler_end:
-    movl %eax, 0x18(%esp)
-    RESTORE_ALL
-
-    movl    (%esp), %edx
-    movl    12(%esp), %ecx
-
-    sti
-    sysexit
-
-
+ENTRY(system_call_handler)
+	push $__USER_DS
+	push %ebp
+	pushfl
+	push $__USER_CS
+	push 4(%ebp)
+	SAVE_ALL	// What about arg 6?
+	cmpl $0, %eax
+	jl sysenter_err
+	cmpl $MAX_SYSCALL, %eax
+	jg sysenter_err
+	call *sys_call_table(, %eax, 0x04)
+	jmp sysenter_fin
+sysenter_err:
+	movl $-ENOSYS, %eax
+sysenter_fin:
+	movl %eax, 0x18(%esp)
+	RESTORE_ALL
+	movl (%esp), %edx // Return address
+	movl 12(%esp), %ecx	      // User stack address
+	sti
+	sysexit

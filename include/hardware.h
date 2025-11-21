@@ -38,9 +38,4 @@ void return_gate(Word ds, Word ss, DWord esp, Word cs, DWord eip);
 
 void enable_int(void);
 void delay(void);
-
-
-void write_msr(DWord msrnum, DWord low, DWord high);
-
 #endif  /* __HARDWARE_H__ */
-
