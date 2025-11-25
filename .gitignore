@@ -9,4 +9,5 @@ build
 system
 user
 bochsout.txt
+.gdbcmd
 

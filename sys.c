@@ -147,9 +147,9 @@ int sys_fork(void)
 #define TAM_BUFFER 512
 
 int sys_write(int fd, char *buffer, int nbytes) {
-char localbuffer [TAM_BUFFER];
-int bytes_left;
-int ret;
+    char localbuffer [TAM_BUFFER];
+    int bytes_left;
+    int ret;
 
 	if ((ret = check_fd(fd, ESCRIPTURA)))
 		return ret;

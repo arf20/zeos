@@ -14,9 +14,9 @@ ENTRY(name)                     \
     mov     40(%esp), %ebp;     \
     mov     36(%esp), %edi;     \
     mov     32(%esp), %esi;     \
-    mov     28(%esp), %ebx;     \
+    mov     28(%esp), %edx;     \
     mov     24(%esp), %ecx;     \
-    mov     20(%esp), %edx;     \
+    mov     20(%esp), %ebx;     \
                                 \
     pushl   $sysenter_return;   \
     pushl   %ebp;               \
@@ -61,6 +61,6 @@ FAST_SYSCALL(getpid, 20)
 /* int get_stats(int pid, struct stats *st) */
 FAST_SYSCALL(get_stats, 35)
 /* int poll_event(event_t *e) */
-FAST_SYSCALL(poll_event, 35)
+FAST_SYSCALL(poll_event, 36)
 
 

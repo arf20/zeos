@@ -155,7 +155,7 @@ typedef union
 
 typedef struct {
     int pressed;
-    char scancode;
+    char c;
 } event_t;
 
 #endif  /* __TYPES_H__ */

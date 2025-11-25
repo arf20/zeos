@@ -73,6 +73,8 @@ int __attribute__((__section__(".text.main")))
 
     /*** DO *NOT* ADD ANY CODE IN THIS ROUTINE BEFORE THIS POINT ***/
 
+    vga_clear();
+
     printk("Kernel Loaded!        ");
 
 

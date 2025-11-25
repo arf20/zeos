@@ -11,6 +11,12 @@
 /**********************/
 
 Byte inb (unsigned short port);
+
+
+void vga_clear();
+void vga_set_char(char c, int x, int y);
+
+
 void printc(char c);
 void printc_xy(Byte x, Byte y, char c);
 void printk(char *string);
