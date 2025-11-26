@@ -8,6 +8,8 @@
 
 #include <types.h>
 
+#include <ctype.h>
+
 /**************/
 /** Screen  ***/
 /**************/
@@ -27,22 +29,6 @@ static unsigned char *vgabuff = (unsigned char*)VGA_ADDRESS;
 
 static int x = 0, y = 0;
 static unsigned char color = 0x0f;
-
-/* text mode colors */
-static const unsigned char color_map[] = {
-    /* VGA_WHITE_ON_BLACK       */ 0x0f,
-    /* VGA_WHITE_ON_BLACK_BLINK */ 0x8f,
-    /* VGA_BLACK_ON_BLACK       */ 0x00,
-    /* VGA_RED_ON_BLACK         */ 0x0c,
-    /* VGA_DRED_ON_BLACK        */ 0x04,
-    /* VGA_GREEN_ON_BLACK       */ 0x0a,
-    /* VGA_DGREEN_ON_BLACK      */ 0x02,
-    /* VGA_BLUE_ON_BLACK        */ 0x09,
-    /* VGA_DBLUE_ON_BLACK       */ 0x01,
-    /* VGA_CYAN_ON_BLACK        */ 0x0b,
-    /* VGA_DCYAN_ON_BLACK       */ 0x03,
-    /* VGA_DGREY_ON_BLACK       */ 0x08
-};
 
 unsigned char
 inb(unsigned short port) {
@@ -68,6 +54,31 @@ memmove(void *dest, const void *src, int n) {
     return dest;
 }
 
+int
+atoi(const char *str) {
+    int res = 0;
+    while (*str >= '0' && *str <= '9')
+        res = (res * 10) + *str++ - '0';
+    return res;
+}
+
+char *
+strchr(const char *str, char c) {
+    while (*str) {
+        if (*str == c) return (char*)str;
+        str++;
+    }
+
+    return NULL;
+}
+
+int
+strlen(const char *str) {
+    int i = 0;
+    while (str[i]) { i++; }
+    return i;
+}
+
 
 void
 vga_set_cursor(int x, int y) {
@@ -76,11 +87,6 @@ vga_set_cursor(int x, int y) {
     outb(VGA_DATA_REGISTER, (unsigned char)((off >> 8) & 0xff));
     outb(VGA_CTRL_REGISTER, VGA_OFFSET_LOW);
     outb(VGA_DATA_REGISTER, (unsigned char)(off & 0xff));
-}
-
-void
-vga_set_color(int color_index){
-    color = color_map[color_index] & 0xff;
 }
 
 int
@@ -121,29 +127,113 @@ vga_clear() {
     vga_set_cursor(0, 0);
 }
 
+void
+handle_csi(char *csi) {
+    static const char ansi_color[] = {
+        0x0,
+        0x4,
+        0x2,
+        0xe,
+        0x1,
+        0x5,
+        0x3,
+        0xf
+    };
 
+    static const char ansi_color_bright[] = {
+        0x7,
+        0xc,
+        0xa,
+        0xe,
+        0x9,
+        0xd,
+        0xb,
+        0xf
+    };
+
+
+    int n = atoi(csi);
+    char *mpos = strchr(csi, ';') + 1;
+    int m = -1;
+    if (mpos != (void*)1)
+        m = atoi(mpos);
+    
+    char cmd = csi[strlen(csi) - 1];
+    switch (cmd) {
+        case 'H': {
+            if (mpos == (void*)1)
+                return;
+
+            x = n; y = m;
+            vga_set_cursor(n, m);
+        } break;
+        case 'm': {
+            if (n == 0)
+                color = 0x0f; /* default */
+            else if (n >= 30 && n <= 37)
+                color = ansi_color[n - 30] | (color & 0xf0);
+            else if (n >= 90 && n <= 97)
+                color = ansi_color_bright[n - 90] | (color & 0xf0);
+            else if (n >= 40 && n <= 47)
+                color = ((ansi_color[n - 40] & 0x7) << 4) | (color & 0x0f);
+            else if (n >= 100 && n <= 107)
+                color = ((ansi_color_bright[n - 100] & 0x7) << 4) | (color & 0x0f);
+            else return;
+        } break;
+    }
+
+}
 
 void
 printc(char c) {
     /* Magic BOCHS debug: writes 'c' to port 0xe9 */
     __asm__ __volatile__ ( "movb %0, %%al; outb $0xe9" ::"a"(c)); 
     /* handle control characters */
-    if (c == '\n') {
-        y++;
-        x = 0;
-    } else if (c == '\b') {
-        x--;
-        if (x<0) {
-            y--;
-            x = NUM_COLUMNS - 1;
-        }
-    } else {
-        vga_set_char(c, x, y);
-        x++;
-        if (x >= NUM_COLUMNS) {
+
+    static int esc = 0, csi = 0;
+    static char csibuff[32];
+    static int pos = 0;
+
+    switch (c) {
+        case '\x1b': {  /* ESC */
+            esc = 1;
+        } break;
+        case '[': {     /* ESC [ */
+            csi = esc;
+        } break;
+
+        case '\n': {    /* NL */
             y++;
             x = 0;
-        }
+        } break;
+        case '\b': {    /* BS */
+            x--;
+            if (x<0) {
+                y--;
+                x = NUM_COLUMNS - 1;
+            }
+        } break;
+        default: {
+            if (csi) {
+                csibuff[pos++] = c;
+
+                if (c == 'H' || c == 'm') {
+                    csibuff[pos] = '\0';
+                    esc = csi = pos = 0;
+                    handle_csi(csibuff);
+                }
+                return;
+            }
+
+            
+
+            vga_set_char(c, x, y);
+            x++;
+            if (x >= NUM_COLUMNS) {
+                y++;
+                x = 0;
+            }
+        } break;
     }
 
     /* if after printing, cursor is ouside the screen, do scroll */
