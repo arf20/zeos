@@ -35,15 +35,15 @@ void system_to_user(void)
 
 int sys_ni_syscall()
 {
-	return -ENOSYS; 
+    return -ENOSYS; 
 }
 
 int sys_getpid()
 {
-	return current()->PID;
+    return current()->PID;
 }
 
-int global_PID=1000;
+int global_PID = 1000;
 
 int ret_from_fork()
 {
@@ -120,7 +120,7 @@ int sys_fork(void)
   uchild->task.PID=++global_PID;
   uchild->task.state=ST_READY;
 
-  int register_ebp;		/* frame pointer */
+  int register_ebp;        /* frame pointer */
   /* Map Parent's ebp to child's stack */
   register_ebp = (int) get_ebp();
   register_ebp=(register_ebp - (int)current()) + (int)(uchild);
@@ -151,26 +151,26 @@ int sys_write(int fd, char *buffer, int nbytes) {
     int bytes_left;
     int ret;
 
-	if ((ret = check_fd(fd, ESCRIPTURA)))
-		return ret;
-	if (nbytes < 0)
-		return -EINVAL;
-	if (!access_ok(VERIFY_READ, buffer, nbytes))
-		return -EFAULT;
-	
-	bytes_left = nbytes;
-	while (bytes_left > TAM_BUFFER) {
-		copy_from_user(buffer, localbuffer, TAM_BUFFER);
-		ret = sys_write_console(localbuffer, TAM_BUFFER);
-		bytes_left-=ret;
-		buffer+=ret;
-	}
-	if (bytes_left > 0) {
-		copy_from_user(buffer, localbuffer,bytes_left);
-		ret = sys_write_console(localbuffer, bytes_left);
-		bytes_left-=ret;
-	}
-	return (nbytes-bytes_left);
+    if ((ret = check_fd(fd, ESCRIPTURA)))
+        return ret;
+    if (nbytes < 0)
+        return -EINVAL;
+    if (!access_ok(VERIFY_READ, buffer, nbytes))
+        return -EFAULT;
+    
+    bytes_left = nbytes;
+    while (bytes_left > TAM_BUFFER) {
+        copy_from_user(buffer, localbuffer, TAM_BUFFER);
+        ret = sys_write_console(localbuffer, TAM_BUFFER);
+        bytes_left-=ret;
+        buffer+=ret;
+    }
+    if (bytes_left > 0) {
+        copy_from_user(buffer, localbuffer,bytes_left);
+        ret = sys_write_console(localbuffer, bytes_left);
+        bytes_left-=ret;
+    }
+    return (nbytes-bytes_left);
 }
 
 
@@ -243,5 +243,62 @@ int sys_poll_event(event_t *e) {
     if (keyout > (&keybuff[KEYBUFF_SIZE - 1]))
         keyout = keybuff;
     return 0;
+}
+
+
+
+/* stack:  is bottom of thread stack */
+int sys_clone(void (*function)(void*), void *parameter, char *stack) {
+    struct list_head *lhcurrent = NULL;
+    union task_union *uchild;
+    
+    /* Any free task_struct? */
+    if (list_empty(&freequeue)) return -ENOMEM;
+
+    lhcurrent=list_first(&freequeue);
+    
+    list_del(lhcurrent);
+    
+    uchild=(union task_union*)list_head_to_task_struct(lhcurrent);
+    
+    /* Copy the parent's task struct to child's */
+    copy_data(current(), uchild, sizeof(union task_union));
+    
+  
+    uchild->task.PID = global_PID++;
+    uchild->task.state = ST_READY;
+
+    int register_ebp;        /* frame pointer */
+    /* Map Parent's ebp to child's stack */
+    register_ebp = (int)get_ebp();
+    register_ebp = (register_ebp - (int)current()) + (int)(uchild);
+
+    uchild->task.register_esp = register_ebp + sizeof(DWord);
+
+    DWord temp_ebp = *(DWord*)register_ebp;
+
+    /* Prepare child stack for context switch */
+    uchild->task.register_esp -= sizeof(DWord);
+    *(DWord*)(uchild->task.register_esp) = (DWord)&ret_from_fork;
+    uchild->task.register_esp -= sizeof(DWord);
+    *(DWord*)(uchild->task.register_esp) = temp_ebp;
+
+    uchild->stack[KERNEL_STACK_SIZE - 2] = (DWord)stack - 20;
+    
+    /* prepare user stack */
+    stack[-4]   = (DWord)&stack[-2];/* function return frame */
+    stack[-3]   = (DWord)function;  /* function should never return */
+    stack[-2]   = 0;                /* there is no previous frame */
+    stack[-1]   = 0;                /* function should never return */
+    stack[0]    = (DWord)parameter;
+
+    /* Set stats to 0 */
+    init_stats(&(uchild->task.p_stats));
+
+    /* Queue child process into readyqueue */
+    uchild->task.state = ST_READY;
+    list_add_tail(&(uchild->task.list), &readyqueue);
+    
+    return uchild->task.PID;
 }
 

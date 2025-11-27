@@ -12,18 +12,18 @@
 
 
 #define NR_TASKS      10
-#define KERNEL_STACK_SIZE	1024
+#define KERNEL_STACK_SIZE    1024
 
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
 
 struct task_struct {
-  int PID;			/* Process ID. This MUST be the first field of the struct. */
+  int PID;                  /* Process ID. This MUST be the first field of the struct. */
   page_table_entry * dir_pages_baseAddr;
-  struct list_head list;	/* Task struct enqueuing */
-  int register_esp;		/* position in the stack */
-  enum state_t state;		/* State of the process */
-  int total_quantum;		/* Total quantum of the process */
-  struct stats p_stats;		/* Process stats */
+  struct list_head list;    /* Task struct enqueuing */
+  int register_esp;       /* position in the stack */
+  enum state_t state;       /* State of the process */
+  int total_quantum;        /* Total quantum of the process */
+  struct stats p_stats;     /* Process stats */
 };
 
 union task_union {
@@ -36,9 +36,9 @@ extern union task_union *task; /* Vector de tasques */
 extern struct task_struct *idle_task;
 
 
-#define KERNEL_ESP(t)       	(DWord) &(t)->stack[KERNEL_STACK_SIZE]
+#define KERNEL_ESP(t)           (DWord) &(t)->stack[KERNEL_STACK_SIZE]
 
-#define INITIAL_ESP       	KERNEL_ESP(&task[1])
+#define INITIAL_ESP           KERNEL_ESP(&task[1])
 
 extern struct list_head freequeue;
 extern struct list_head readyqueue;

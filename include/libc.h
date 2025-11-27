@@ -13,6 +13,10 @@ extern int errno;
 
 int write(int fd, char *buffer, int size);
 
+int gettime();
+
+int clone(void (*function)(void*), void *parameter, char *stack);
+
 void itoa(int a, char *b);
 
 int strlen(char *a);

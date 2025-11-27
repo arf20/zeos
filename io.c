@@ -8,7 +8,6 @@
 
 #include <types.h>
 
-#include <ctype.h>
 
 /**************/
 /** Screen  ***/

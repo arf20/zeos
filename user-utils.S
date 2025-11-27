@@ -62,5 +62,6 @@ FAST_SYSCALL(getpid, 20)
 FAST_SYSCALL(get_stats, 35)
 /* int poll_event(event_t *e) */
 FAST_SYSCALL(poll_event, 36)
-
+/* int clone(void (*function)(void*), void *parameter, char *stack) */
+FAST_SYSCALL(clone, 3)
 

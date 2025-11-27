@@ -36,47 +36,47 @@ struct list_head readyqueue;
 
 void init_stats(struct stats *s)
 {
-	s->user_ticks = 0;
-	s->system_ticks = 0;
-	s->blocked_ticks = 0;
-	s->ready_ticks = 0;
-	s->elapsed_total_ticks = get_ticks();
-	s->total_trans = 0;
-	s->remaining_ticks = get_ticks();
+    s->user_ticks = 0;
+    s->system_ticks = 0;
+    s->blocked_ticks = 0;
+    s->ready_ticks = 0;
+    s->elapsed_total_ticks = get_ticks();
+    s->total_trans = 0;
+    s->remaining_ticks = get_ticks();
 }
 
 /* get_DIR - Returns the Page Directory address for task 't' */
 page_table_entry * get_DIR (struct task_struct *t) 
 {
-	return t->dir_pages_baseAddr;
+    return t->dir_pages_baseAddr;
 }
 
 /* get_PT - Returns the Page Table address for task 't' */
 page_table_entry * get_PT (struct task_struct *t) 
 {
-	return (page_table_entry *)(((unsigned int)(t->dir_pages_baseAddr->bits.pbase_addr))<<12);
+    return (page_table_entry *)(((unsigned int)(t->dir_pages_baseAddr->bits.pbase_addr))<<12);
 }
 
 
 int allocate_DIR(struct task_struct *t) 
 {
-	int pos;
+    int pos;
 
-	pos = ((int)t-(int)task)/sizeof(union task_union);
+    pos = ((int)t-(int)task)/sizeof(union task_union);
 
-	t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[pos]; 
+    t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[pos]; 
 
-	return 1;
+    return 1;
 }
 
 void cpu_idle(void)
 {
-	__asm__ __volatile__("sti": : :"memory");
+    __asm__ __volatile__("sti": : :"memory");
 
-	while(1)
-	{
-	;
-	}
+    while(1)
+    {
+    ;
+    }
 }
 
 #define DEFAULT_QUANTUM 10
@@ -129,7 +129,7 @@ void sched_next_rr(void)
   struct task_struct *t;
 
   if (!list_empty(&readyqueue)) {
-	e = list_first(&readyqueue);
+    e = list_first(&readyqueue);
     list_del(e);
 
     t=list_head_to_task_struct(e);
