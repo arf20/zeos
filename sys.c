@@ -232,16 +232,22 @@ int sys_get_stats(int pid, struct stats *st)
 }
 
 
+/* circular buffer and pointers stored here */
 event_t keybuff[KEYBUFF_SIZE];
 event_t *keyin, *keyout;
 
+/* poll_event handler */
 int sys_poll_event(event_t *e) {
+    /* empty buffer */
     if (keyin == keyout)
-        return -EAGAIN;
+        return -EAGAIN;     /* try again */
 
+    /* pop key off buffer */
     *e = *(keyout++);
+    /* wrap around */
     if (keyout > (&keybuff[KEYBUFF_SIZE - 1]))
         keyout = keybuff;
+    /* success */
     return 0;
 }
 
@@ -283,14 +289,14 @@ int sys_clone(void (*function)(void*), void *parameter, char *stack) {
     uchild->task.register_esp -= sizeof(DWord);
     *(DWord*)(uchild->task.register_esp) = temp_ebp;
 
-    uchild->stack[KERNEL_STACK_SIZE - 2] = (DWord)stack - 20;
+    DWord *user_stack = (DWord*)stack;
+
+    uchild->stack[KERNEL_STACK_SIZE - 2] = (DWord)&user_stack[-1];
+    uchild->stack[KERNEL_STACK_SIZE - 5] = (DWord)function;
     
     /* prepare user stack */
-    stack[-4]   = (DWord)&stack[-2];/* function return frame */
-    stack[-3]   = (DWord)function;  /* function should never return */
-    stack[-2]   = 0;                /* there is no previous frame */
-    stack[-1]   = 0;                /* function should never return */
-    stack[0]    = (DWord)parameter;
+    user_stack[-1]   = 0;                   /* function should never return */
+    user_stack[0]    = (DWord)parameter;
 
     /* Set stats to 0 */
     init_stats(&(uchild->task.p_stats));

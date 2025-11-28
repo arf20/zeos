@@ -1,0 +1,97 @@
+# ZeOS game implementation notes
+
+1. Keyboard support stores keys in a circular buffer.
+
+Circular buffer (32B in size) with two pointers, read and write.
+
+Keyboard interrupt routine writes a character (not scancode) in the write
+pointer and increases it, wrapping around if surpassing the end.
+
+
+Test
+```
+event_t e;
+while(1) {
+    if (poll_event(&e) == 0 && e.pressed) {
+        write(1, &e.c, 1);
+    }
+}
+```
+
+The test requires user input (pressing keys)
+
+
+2. Functional pollEvent feature.
+
+pollEvent reads the character at the read pointer and increases it, if the read
+pointer is not at the same position as the write pointer (empty buffer).
+
+A problem we had was adding the syscall, for which we took the wrappers from our
+own branch, because they were easier to work with; but the argument order
+appears to be different in this branch than in the original one: %ebx and %edx
+are swapped. This branch is more akin the Linux call convention.
+
+I would like to add that the file structure of ZeOS, and where to put specific
+pieces of code is rather unclear.
+
+Test
+*same code as previus, tests both functionalities.
+
+
+3. Functional change cursor position feature.
+
+We rewrote the terminal emulator at io.c to support the CSI 'H' ANSI escape
+sequence.
+
+Test
+```
+write(1, "\x1b[20;20H", 8);
+write(1, "adios", 7);
+```
+
+Prints "adios" at position 20,20.
+
+
+4. Functional remove character feature.
+
+This is a special case of moving and writing (a space), so we decided against
+providing an specific escape code, which also we couldn't find anywhere in ANSI.
+(only clear part or full lines).
+
+Test
+```
+write(1, "\x1b[20;20H", 8);
+write(1, "akjsdaf", 7);
+write(1, "\x1b[22;20H", 8);
+write(1, " ", 5);
+```
+
+Removes the 'j' character.
+
+
+5. Functional change foreground and background color features.
+
+It was decided that the 3 and 4-bit color ANSI escape sequences were sufficient
+for this game, so we did not need to complicate the ANSI parser further for
+true color escapes.
+
+Test
+```
+write(1, "\x1b[31m", 5);
+write(1, "akjsdaf", 7);
+write(1, "\x1b[44m\x1b[93m", 10);
+write(1, "akjsdaf", 7);
+```
+
+Prints 'akjsdaf' in red, and the same again with blue background and yellow
+foreground.
+
+
+
+improvementes:
+
+poll event -> scancodes
+no machacar scancodes nuevos
+comprobar parametros de poll event
+    y de clone
+

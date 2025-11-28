@@ -38,33 +38,24 @@ int zeos_ticks = 0;
 void clock_routine()
 {
   zeos_show_clock();
-  zeos_ticks ++;
+  zeos_ticks++;
   
   schedule();
 }
 
-void keyboard_routine()
-{
+void keyboard_routine() {
+    /* fetch key from PS/2 controller */
     unsigned char c = inb(0x60);
 
-    if (c & 0x80)
-        return;
-
-    c = c & 0x7f;
-
-#if 0
-    char buf[16];
-    itoa(c, buf);
-    printk(buf);
-    printk("\n");
-#endif
-    
+    /* construct event struct */
     event_t e = {
-      .pressed = (c & 0x80) >> 7,
-      .c = char_map[c]
-    };
-
+      .pressed = (c & 0x80) >> 7,   /* 7th bit is event type */
+      .c = char_map[c & 0x7f]       /* lower 7 bits are the scancode */
+    };                              /* which is mapped according to keymap */
+                                    /* above */
+    /* push to buffer */
     *(keyin++) = e;
+    /* wrap around */
     if (keyin > (&keybuff[KEYBUFF_SIZE - 1]))
         keyin = keybuff;
 }
