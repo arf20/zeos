@@ -207,6 +207,8 @@ void init_task1(void)
   setMSR(0x175, 0, (unsigned long)&(uc->stack[KERNEL_STACK_SIZE]));
 
   set_cr3(c->dir_pages_baseAddr);
+
+  memset(&c->slots, 0, sizeof(c->slots));
 }
 
 void init_freequeue()
@@ -264,3 +266,4 @@ void force_task_switch()
 
   sched_next_rr();
 }
+

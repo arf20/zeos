@@ -1,5 +1,6 @@
 #include <libc.h>
 
+static sem_t *sem = NULL;
 
 void
 keyboard_thread(void *data)
@@ -7,7 +8,9 @@ keyboard_thread(void *data)
     event_t e;
     while(1) {
         if (poll_event(&e) == 0 && e.pressed) {
-            write(1, &e.c, 1);
+            sem_wait(sem);
+            write(1, &char_map[e.c], 1);
+            sem_signal(sem);
         }
     }
 }
@@ -26,19 +29,28 @@ main(void)
     write(1, "\x1b[22;20H", 8);
     write(1, "\x1b[0m ", 5);
 
+    sem = sem_create(1);
+
     char tstack[1024];
     clone(&keyboard_thread, NULL, &tstack[1023]);
+
 
     int i = 0;
     char buf[10];
     while (1) {
         if ((i % 1000000) == 0) {
+            sem_wait(sem);
+
             write(1, "tick ", 5);
             itoa(i, buf);
             write(1, buf, strlen(buf));
             write(1, "\n", 1);
+
+            sem_signal(sem);
         }
         i++;
     }
+
+    sem_destroy(sem);
 }
 

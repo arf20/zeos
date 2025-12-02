@@ -52,12 +52,22 @@ FAST_SYSCALL(exit, 1)
 FAST_SYSCALL(fork, 2)
 /* int write(int fd, const void buf, size_t count) */
 FAST_SYSCALL(write, 4)
+/* int thread_exit() */
+FAST_SYSCALL(thread_exit, 6)
 /* int gettime() */
 FAST_SYSCALL(gettime, 10)
 /* int yield() */
 FAST_SYSCALL(yield, 13)
 /* int getpid() */
 FAST_SYSCALL(getpid, 20)
+/* int sem_create(int initial_value) */
+FAST_SYSCALL(sem_create, 25)
+/* int sem_wait(sem_t *s) */
+FAST_SYSCALL(sem_wait, 26)
+/* int sem_signal(sem_t *s) */
+FAST_SYSCALL(sem_signal, 27)
+/* int sem_destroy(sem_t *s) */
+FAST_SYSCALL(sem_destroy, 28)
 /* int get_stats(int pid, struct stats *st) */
 FAST_SYSCALL(get_stats, 35)
 /* int poll_event(event_t *e) */

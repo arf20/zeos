@@ -8,7 +8,7 @@ ENTRY (sys_call_table)
     .long sys_clone         //3
     .long sys_write         //4
     .long sys_ni_syscall    //5
-    .long sys_ni_syscall    //6
+    .long sys_thread_exit   //6
     .long sys_ni_syscall    //7
     .long sys_ni_syscall    //8
     .long sys_ni_syscall    //9
@@ -27,13 +27,13 @@ ENTRY (sys_call_table)
     .long sys_ni_syscall    //22
     .long sys_ni_syscall    //23
     .long sys_ni_syscall    //24
-    .long sys_ni_syscall    //25
-    .long sys_ni_syscall    //26
-    .long sys_ni_syscall    //27
-    .long sys_ni_syscall    //28
+    .long sys_sem_create    //25
+    .long sys_sem_wait      //26
+    .long sys_sem_signal    //27
+    .long sys_sem_destroy   //28
     .long sys_ni_syscall    //29
-    .long sys_ni_syscall    //30
-    .long sys_ni_syscall    //31
+    .long sys_get_slot      //30
+    .long sys_del_slot      //31
     .long sys_ni_syscall    //32
     .long sys_ni_syscall    //33
     .long sys_ni_syscall    //34

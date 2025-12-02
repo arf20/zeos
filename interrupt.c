@@ -16,23 +16,6 @@
 Gate idt[IDT_ENTRIES];
 Register    idtR;
 
-char char_map[] =
-{
-  '\0','\0','1','2','3','4','5','6',
-  '7','8','9','0','\'','¡','\0','\0',
-  'q','w','e','r','t','y','u','i',
-  'o','p','`','+','\n','\0','a','s',
-  'd','f','g','h','j','k','l','ñ',
-  '\0','º','\0','ç','z','x','c','v',
-  'b','n','m',',','.','-','\0','*',
-  '\0','\0','\0','\0','\0','\0','\0','\0',
-  '\0','\0','\0','\0','\0','\0','\0','7',
-  '8','9','-','4','5','6','+','1',
-  '2','3','0','\0','\0','\0','<','\0',
-  '\0','\0','\0','\0','\0','\0','\0','\0',
-  '\0','\0'
-};
-
 int zeos_ticks = 0;
 
 void clock_routine()
@@ -50,9 +33,13 @@ void keyboard_routine() {
     /* construct event struct */
     event_t e = {
       .pressed = (c & 0x80) >> 7,   /* 7th bit is event type */
-      .c = char_map[c & 0x7f]       /* lower 7 bits are the scancode */
-    };                              /* which is mapped according to keymap */
-                                    /* above */
+      .c = c & 0x7f                 /* lower 7 bits are the scancode */
+    };
+    
+    /* if buffer full, stop */
+    if (keyin + 1 == keyout)
+        return;
+
     /* push to buffer */
     *(keyin++) = e;
     /* wrap around */

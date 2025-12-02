@@ -86,12 +86,22 @@ write(1, "akjsdaf", 7);
 Prints 'akjsdaf' in red, and the same again with blue background and yellow
 foreground.
 
+ [X] 1. (1 point)   Keyboard support stores keys in a circular buffer.
+ [X] 2. (1 point)   Functional pollEvent feature.
+ [X] 3. (.5 points) Functional change cursor position feature.
+ [X] 4. (.5 points) Functional remove character feature.
+ [X] 5. (1 point)   Functional change foreground and background color features.
+ [X] 6. (2 points)  Functional clone and exit system calls.
+ [W] 7. (2 point)   Functional synchronization support.
+ [ ] 8. (1 points)  Functional getSlot and delSlot features.
+ [ ] 9. (1 point)   Functional game using different implemented features.
+ [ ] 10. [Optional] (1 point) Challenge: Implement a user level slab allocator on top of ‘getSlot’.
 
+improvements:
 
-improvementes:
-
-poll event -> scancodes
-no machacar scancodes nuevos
-comprobar parametros de poll event
-    y de clone
+ [X] poll event -> scancodes
+ [X] no machacar scancodes nuevos
+ [X] comprobar parametros de poll event
+ [X]     y de clone
+ [ ] thread exit
 

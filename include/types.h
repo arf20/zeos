@@ -5,6 +5,8 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
 
+#include <list.h>
+
 /** System types definition **/
 /*****************************/
 
@@ -155,7 +157,19 @@ typedef union
 
 typedef struct {
     int pressed;
-    char c;
+    unsigned char c;
 } event_t;
+
+typedef struct {
+    int used;
+    int count;
+    struct list_head blocked;
+} sem_t;
+
+typedef struct {
+    int allocated;
+    int page;
+    int n;
+} slot_t;
 
 #endif  /* __TYPES_H__ */

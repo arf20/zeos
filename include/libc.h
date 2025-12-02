@@ -10,6 +10,7 @@
 #include <types.h>
 
 extern int errno;
+extern char char_map[];
 
 int write(int fd, char *buffer, int size);
 
@@ -35,4 +36,12 @@ int get_stats(int pid, struct stats *st);
 
 int poll_event(event_t *e);
 
+
+sem_t* sem_create(int initial_value);
+int sem_wait(sem_t* s);
+int sem_signal(sem_t* s);
+int sem_destroy(sem_t* s);
+
+
 #endif  /* __LIBC_H__ */
+

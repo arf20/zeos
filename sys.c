@@ -182,32 +182,36 @@ int sys_gettime()
 }
 
 void sys_exit()
-{  
-  int i;
+{
+    int pid = current()->PID;
 
-  page_table_entry *process_PT = get_PT(current());
+    /* for all of our threads (task) */
+    for (int i = 0; i < NR_TASKS; i++) {
+        if (task[i].task.PID != pid)
+            continue;
 
-  // Deallocate all the propietary physical pages
-  for (i=0; i<NUM_PAG_DATA; i++)
-  {
-    free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
-    del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
-  }
+        page_table_entry *process_PT = get_PT(&task[i].task);
+
+        // Deallocate all the propietary physical pages
+        for (int p = 0; p < NUM_PAG_DATA; p++) {
+            free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
+            del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
+        }
+      
+        /* Free task_struct */
+        list_add_tail(&(task[i].task.list), &freequeue);
+        task[i].task.PID = -1;
+    }
   
-  /* Free task_struct */
-  list_add_tail(&(current()->list), &freequeue);
-  
-  current()->PID=-1;
-  
-  /* Restarts execution of the next process */
-  sched_next_rr();
+    /* Restarts execution of the next process */
+    sched_next_rr();
 }
 
 /* System call to force a task switch */
 int sys_yield()
 {
-  force_task_switch();
-  return 0;
+    force_task_switch();
+    return 0;
 }
 
 extern int remaining_quantum;
@@ -238,6 +242,10 @@ event_t *keyin, *keyout;
 
 /* poll_event handler */
 int sys_poll_event(event_t *e) {
+    /* check user address */
+    if (!access_ok(VERIFY_READ, e, sizeof(event_t)))
+        return -EFAULT;
+
     /* empty buffer */
     if (keyin == keyout)
         return -EAGAIN;     /* try again */
@@ -257,6 +265,12 @@ int sys_poll_event(event_t *e) {
 int sys_clone(void (*function)(void*), void *parameter, char *stack) {
     struct list_head *lhcurrent = NULL;
     union task_union *uchild;
+    
+    if (!access_ok(VERIFY_READ, function, 1))
+        return -EFAULT;
+
+    if (!access_ok(VERIFY_WRITE, stack, 1))
+        return -EFAULT;
     
     /* Any free task_struct? */
     if (list_empty(&freequeue)) return -ENOMEM;
@@ -290,7 +304,7 @@ int sys_clone(void (*function)(void*), void *parameter, char *stack) {
     *(DWord*)(uchild->task.register_esp) = temp_ebp;
 
     DWord *user_stack = (DWord*)stack;
-
+    
     uchild->stack[KERNEL_STACK_SIZE - 2] = (DWord)&user_stack[-1];
     uchild->stack[KERNEL_STACK_SIZE - 5] = (DWord)function;
     
@@ -306,5 +320,92 @@ int sys_clone(void (*function)(void*), void *parameter, char *stack) {
     list_add_tail(&(uchild->task.list), &readyqueue);
     
     return uchild->task.PID;
+}
+
+
+int sys_thread_exit() {
+    /* Free task_struct */
+    list_add_tail(&(current()->list), &freequeue);
+
+    current()->PID = -1;
+  
+    /* Restarts execution of the next process */
+    sched_next_rr();
+    
+    return 0;
+}
+
+
+sem_t* sys_sem_create(int initial_value) {
+    static sem_t sems[2*NR_TASKS] = { 0 };  /* allocate twice the semaphores than tasks */
+
+    int i = 0;
+    for (; i < 2*NR_TASKS; i++)
+        if (!sems[i].used)
+            break;
+
+    sems[i].used = 1;
+    sems[i].count = initial_value;
+    INIT_LIST_HEAD(&sems[i].blocked);
+
+    return &sems[i];
+}
+
+int sys_sem_wait(sem_t* s) {
+    s->count--;
+    if (s->count < 0) {
+        list_add_tail(&current()->list, &s->blocked);
+        sched_next_rr();
+    }
+    return 0;
+}
+
+int sys_sem_signal(sem_t* s) {
+    s->count++;
+    if (s->count <= 0) {
+        struct list_head *l = list_first(&s->blocked);
+        list_del(l);
+        list_add_tail(l, &readyqueue);
+    }
+    return 0;
+}
+
+int sys_sem_destroy(sem_t* s) {
+    s->used = 0;
+    return 0;
+}
+
+void *sys_get_slot(DWord size) {
+    int npages = (size / PAGE_SIZE) + (size % PAGE_SIZE), new_ph_pag;
+    int new_ph_pag, i;
+
+    page_table_entry *process_PT = get_PT(&uchild->task);
+    for (int pag = 0; pag < npages; pag++) {
+        new_ph_pag = alloc_frame();
+        if (new_ph_pag != -1) {
+            set_ss_pag(process_PT, current()->heap_btm_page + pag, new_ph_pag);
+        } else {
+            /* Deallocate allocated pages. Up to pag. */
+            for (i=0; i<pag; i++) {
+                free_frame(get_frame(process_PT, current()->heap_btm_page + i));
+                del_ss_pag(process_PT, PAG_LOG_INIT_DATA + i);
+            }
+            /* Deallocate task_struct */
+            list_add_tail(lhcurrent, &freequeue);
+            
+            /* Return error */
+            return -EAGAIN; 
+        }
+    }
+
+    void *ptr_slot = current()->heap_btm_page << 12;
+
+    current()->heap_btm_page += npages;
+
+    return ptr_slot;
+}
+
+int sys_del_slot(void *s) {
+
 }
 
