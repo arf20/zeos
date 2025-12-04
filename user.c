@@ -29,6 +29,13 @@ main(void)
     write(1, "\x1b[22;20H", 8);
     write(1, "\x1b[0m ", 5);
 
+    char *slot = get_slot(1024*1024);
+    for (DWord i = 0; i < 1024*1024; i += 1024) {
+        slot[i] = 'a';
+        write(1, &slot[i], 1);
+    }
+
+
     sem = sem_create(1);
 
     char tstack[1024];

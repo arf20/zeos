@@ -376,36 +376,72 @@ int sys_sem_destroy(sem_t* s) {
 }
 
 void *sys_get_slot(DWord size) {
-    int npages = (size / PAGE_SIZE) + (size % PAGE_SIZE), new_ph_pag;
-    int new_ph_pag, i;
+    DWord npages = (size / PAGE_SIZE) + (size % PAGE_SIZE), new_ph_pag;
+    slot_t *slots = current()->slots;
 
-    page_table_entry *process_PT = get_PT(&uchild->task);
+    /* search empty slot */
+    int slot = 0;
+    for (; slot < NR_SLOTS; slot++)
+        if (!slots[slot].allocated)
+            break;
+
+    if (slot == NR_SLOTS)
+        return NULL;
+
+    /* search user space to put slot */
+    DWord place = PAG_LOG_INIT_DATA + NUM_PAG_DATA;
+    for (int i = 0; i < NR_SLOTS; i++) {
+        if (!slots[i].allocated)
+            continue;
+        if (slots[i].place > place)
+            place = slots[i].place + slots[i].npages;
+    }
+
+    /* allocate npages at place */
+    page_table_entry *process_PT = get_PT(current());
     for (int pag = 0; pag < npages; pag++) {
         new_ph_pag = alloc_frame();
         if (new_ph_pag != -1) {
-            set_ss_pag(process_PT, current()->heap_btm_page + pag, new_ph_pag);
+            set_ss_pag(process_PT, place + pag, new_ph_pag);
         } else {
             /* Deallocate allocated pages. Up to pag. */
-            for (i=0; i<pag; i++) {
-                free_frame(get_frame(process_PT, current()->heap_btm_page + i));
-                del_ss_pag(process_PT, PAG_LOG_INIT_DATA + i);
+            for (int i = 0; i < pag; i++) {
+                free_frame(get_frame(process_PT, place + i));
+                del_ss_pag(process_PT, place + i);
             }
-            /* Deallocate task_struct */
-            list_add_tail(lhcurrent, &freequeue);
             
             /* Return error */
-            return -EAGAIN; 
+            return NULL; 
         }
     }
 
-    void *ptr_slot = current()->heap_btm_page << 12;
+    slots[slot].allocated = 1;
+    slots[slot].place  = place;
+    slots[slot].npages = npages;
 
-    current()->heap_btm_page += npages;
-
-    return ptr_slot;
+    return (void*)(place << 12);
 }
 
 int sys_del_slot(void *s) {
+    slot_t *slots = current()->slots;
 
+    /* search empty slot */
+    int slot = 0;
+    for (; slot < NR_SLOTS; slot++)
+        if (slots[slot].place == ((DWord)s >> 12))
+            break;
+    DWord place = slots[slot].place;
+
+    /* free pages */
+    page_table_entry *process_PT = get_PT(current());
+    for (int i = 0; i < slots[slot].npages; i++) {
+        free_frame(get_frame(process_PT, place + i));
+        del_ss_pag(process_PT, place + i);
+    }
+    
+    /* free slot */
+    slots[slot].allocated = 0;
+
+    return 0;
 }
 

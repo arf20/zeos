@@ -68,6 +68,10 @@ FAST_SYSCALL(sem_wait, 26)
 FAST_SYSCALL(sem_signal, 27)
 /* int sem_destroy(sem_t *s) */
 FAST_SYSCALL(sem_destroy, 28)
+/* void *get_slot(DWord numbytes) */
+FAST_SYSCALL(get_slot, 30)
+/* int del_slot(void *slot) */
+FAST_SYSCALL(del_slot, 31)
 /* int get_stats(int pid, struct stats *st) */
 FAST_SYSCALL(get_stats, 35)
 /* int poll_event(event_t *e) */

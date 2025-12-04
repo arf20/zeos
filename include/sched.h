@@ -24,7 +24,7 @@ struct task_struct {
   enum state_t state;       /* State of the process */
   int total_quantum;        /* Total quantum of the process */
   struct stats p_stats;     /* Process stats */
-  slot_t slots[8];           /* im sorry: only 8 slots allowed */
+  slot_t slots[NR_SLOTS];   /* im sorry: only 8 slots allowed */
 };
 
 union task_union {

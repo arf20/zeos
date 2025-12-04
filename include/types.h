@@ -166,10 +166,12 @@ typedef struct {
     struct list_head blocked;
 } sem_t;
 
+
+#define NR_SLOTS    10
 typedef struct {
     int allocated;
-    int page;
-    int n;
+    DWord place;
+    DWord npages;
 } slot_t;
 
 #endif  /* __TYPES_H__ */

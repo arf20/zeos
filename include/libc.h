@@ -42,6 +42,8 @@ int sem_wait(sem_t* s);
 int sem_signal(sem_t* s);
 int sem_destroy(sem_t* s);
 
+void *get_slot(DWord numbytes);
+int del_slot(void *slot);
 
 #endif  /* __LIBC_H__ */
 
