@@ -5,7 +5,7 @@
 #include <interrupt.h>
 #include <segment.h>
 #include <hardware.h>
-#include <libc.h>
+#include <plibc.h>
 #include <io.h>
 
 #include <sched.h>

@@ -75,11 +75,10 @@ int access_ok(int type, const void * addr, unsigned long size)
     case VERIFY_WRITE:
       /* Should suppose no support for automodifyable code */
       if (addr_ini>=USER_FIRST_PAGE+NUM_PAG_CODE)
-	  return 1;
+        return 1;
     default:
-      if ((addr_ini>=USER_FIRST_PAGE)&&
-  	(addr_fin<=(USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA)))
-          return 1;
+      if (addr_ini>=USER_FIRST_PAGE)
+        return 1;
   }
   return 0;
 }

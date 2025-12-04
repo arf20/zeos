@@ -31,7 +31,7 @@ SYSOBJ = interrupt.o entry.o sys_call_table.o io.o sched.o sys.o mm.o devices.o 
 LIBZEOS = -L . -l zeos -l auxjp
 
 #add to USROBJ the object files required to complete the user program
-USROBJ = libc.o user-utils.o # libjp.a
+USROBJ = user.o game.o random.o ansi.o plibc.o user-utils.o # libjp.a
 
 all:zeos.bin
 
@@ -64,7 +64,13 @@ kernel-utils.s: kernel-utils.S $(INCLUDEDIR)/asm.h
 sys_call_table.s: sys_call_table.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/segment.h
 	$(CPP) $(ASMFLAGS) -o $@ $<
 
-user.o:user.c $(INCLUDEDIR)/libc.h
+user.o: user.c
+
+game.o: game.c $(INCLUDEDIR)/game.h
+
+random.o: random.c $(INCLUDEDIR)/random.h
+
+ansi.o: ansi.c $(INCLUDEDIR)/ansi.h
 
 interrupt.o:interrupt.c $(INCLUDEDIR)/interrupt.h $(INCLUDEDIR)/segment.h $(INCLUDEDIR)/types.h
 
@@ -72,7 +78,7 @@ io.o:io.c $(INCLUDEDIR)/io.h
 
 sched.o:sched.c $(INCLUDEDIR)/sched.h
 
-libc.o:libc.c $(INCLUDEDIR)/libc.h
+plibc.o:plibc.c $(INCLUDEDIR)/plibc.h
 
 mm.o:mm.c $(INCLUDEDIR)/types.h $(INCLUDEDIR)/mm.h
 
@@ -88,8 +94,8 @@ system.o:system.c $(INCLUDEDIR)/hardware.h system.lds $(SYSOBJ) $(INCLUDEDIR)/se
 system: system.o system.lds $(SYSOBJ)
 	$(LD) $(LINKFLAGS) $(SYSLDFLAGS) -o $@ $< $(SYSOBJ) $(LIBZEOS) 
 
-user: user.o user.lds $(USROBJ) 
-	$(LD) $(LINKFLAGS) $(USRLDFLAGS) -o $@ $< $(USROBJ)
+user: $(USROBJ) 
+	$(LD) $(LINKFLAGS) $(USRLDFLAGS) -o $@ $(USROBJ)
 
 
 clean:
