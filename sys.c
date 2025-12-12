@@ -214,23 +214,31 @@ void sys_exit()
 {
     int pid = current()->PID;
 
-    /* for all of our threads (task) */
+    /* last thread of process? */
+    int c = 0;
     for (int i = 0; i < NR_TASKS; i++) {
-        if (task[i].task.PID != pid)
-            continue;
-
-        page_table_entry *process_PT = get_PT(&task[i].task);
-
-        // Deallocate all the propietary physical pages
-        for (int p = 0; p < NUM_PAG_DATA; p++) {
-            free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
-            del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
-        }
-      
-        /* Free task_struct */
-        list_add_tail(&(task[i].task.list), &freequeue);
-        task[i].task.PID = -1;
+        if (task[i].task.PID == pid)
+            c++;
     }
+
+    /* if last */
+    if (c == 1) {
+        page_table_entry *process_PT = get_PT(current());
+
+        // Deallocate all the physical pages
+        for (int p = 0; p < NUM_PAG_CODE; p++) {
+            free_frame(get_frame(process_PT, PAG_LOG_INIT_CODE + p));
+            del_ss_pag(process_PT, PAG_LOG_INIT_CODE + p);
+        }
+        for (int p = 0; p < NUM_PAG_DATA; p++) {
+            free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA + p));
+            del_ss_pag(process_PT, PAG_LOG_INIT_DATA + p);
+        }
+    }
+
+    /* Free task_struct */
+    list_add_tail(&(current()->list), &freequeue);
+    current()->PID = -1;
   
     /* Restarts execution of the next process */
     sched_next_rr();
@@ -351,7 +359,7 @@ int sys_clone(void (*function)(void*), void *parameter, char *stack) {
     return uchild->task.PID;
 }
 
-
+#if 0
 int sys_thread_exit() {
     /* Free task_struct */
     list_add_tail(&(current()->list), &freequeue);
@@ -363,7 +371,7 @@ int sys_thread_exit() {
     
     return 0;
 }
-
+#endif
 
 sem_t* sys_sem_create(int initial_value) {
     static sem_t sems[2*NR_TASKS] = { 0 };  /* allocate twice the semaphores than tasks */
@@ -476,5 +484,17 @@ int sys_del_slot(void *s) {
     slots[slot].allocated = 0;
 
     return 0;
+}
+
+void
+sys_set_errno(int errno)
+{
+    current()->errno = errno;
+}
+
+int
+sys_get_errno()
+{
+    return current()->errno;
 }
 

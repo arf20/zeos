@@ -69,6 +69,17 @@
       movb $0x20, %al; \
       outb %al, $0x20;
 
+ENTRY(page_fault_handler_new)
+    SAVE_ALL
+    mov     0x30(%esp), %eax    // retrieve error code pushed on top of eip
+    pushl   %eax                // pass as argument to routine cdelc
+    call page_fault_routine_new
+    popl    %eax                // remove parameter
+    RESTORE_ALL
+    add     $-4, %esp            // clear error
+    iret
+
+
 ENTRY(clock_handler)
       SAVE_ALL
       pushl %eax;

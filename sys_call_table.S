@@ -8,7 +8,7 @@ ENTRY (sys_call_table)
     .long sys_clone         //3
     .long sys_write         //4
     .long sys_ni_syscall    //5
-    .long sys_thread_exit   //6
+    .long sys_ni_syscall    //6
     .long sys_ni_syscall    //7
     .long sys_ni_syscall    //8
     .long sys_ni_syscall    //9
@@ -18,8 +18,8 @@ ENTRY (sys_call_table)
     .long sys_yield         //13
     .long sys_ni_syscall    //14
     .long sys_ni_syscall    //15
-    .long sys_ni_syscall    //16
-    .long sys_ni_syscall    //17
+    .long sys_set_errno     //16
+    .long sys_get_errno     //17
     .long sys_ni_syscall    //18
     .long sys_ni_syscall    //19
     .long sys_getpid        //20    

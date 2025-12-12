@@ -60,9 +60,18 @@ page_table_entry * get_PT (struct task_struct *t)
 
 int allocate_DIR(struct task_struct *t) 
 {
-    int pos;
-
-    pos = ((int)t-(int)task)/sizeof(union task_union);
+    int pos = 0;
+    for (; pos < NR_TASKS; pos++) {
+        int used = 0;
+        for (int i = 0; i < NR_TASKS; i++) {
+            if (task[i].task.dir_pages_baseAddr == dir_pages[pos]) {
+                used = 1;
+                break;
+            }
+        }
+        if (!used)
+            break;
+    }
 
     t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[pos]; 
 

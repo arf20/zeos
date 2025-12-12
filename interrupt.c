@@ -5,8 +5,9 @@
 #include <interrupt.h>
 #include <segment.h>
 #include <hardware.h>
-#include <plibc.h>
 #include <io.h>
+#include <entry.h>
+#include <klibc.h>
 
 #include <sched.h>
 #include <sys.h>
@@ -91,10 +92,6 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
   idt[vector].highOffset      = highWord((DWord)handler);
 }
 
-void clock_handler();
-void keyboard_handler();
-void system_call_handler();
-
 void setMSR(unsigned long msr_number, unsigned long high, unsigned long low);
 
 void setSysenter()
@@ -113,11 +110,21 @@ void setIdt()
   set_handlers();
 
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
+  setTrapHandler(14, page_fault_handler_new, 0);
   setInterruptHandler(32, clock_handler, 0);
   setInterruptHandler(33, keyboard_handler, 0);
 
   setSysenter();
 
   set_idt_reg(&idtR);
+}
+
+
+void page_fault_routine_new(unsigned int eip)
+{
+    printk("\nPage Fault at EIP 0x");
+    printk(leftpad(utoa(eip, 16), 8, '0'));
+    printk("\n");
+    while (1) {}
 }
 

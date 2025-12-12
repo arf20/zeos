@@ -36,10 +36,40 @@ static const int *board = NULL;
 /* cursor */
 static int curx = 0, cury = 0;
 
+/* keyboard thread */
+static sem_t *sem_draw = NULL;
+
+void
+keyboard_thread(void *data)
+{
+    int input = 0;
+    while (gameGetState() == STATE_GOING) {
+        input = getchar();
+
+        if (isalpha(input)) {
+            input = tolower(input);
+            switch (input) {
+            case 'a': curx--; break;
+            case 'd': curx++; break;
+            case 'w': cury--; break;
+            case 's': cury++; break;
+            case 'f': gameFlagCell(curx, cury); break;
+            case 'c': gameClearCell(curx, cury); break;
+            }
+        }
+        if (curx < 0) curx = size - 1;
+        if (cury < 0) cury = size - 1;
+        if (curx >= size) curx = 0;
+        if (cury >= size) cury = 0;
+
+        sem_signal(sem_draw);
+    }
+}
+
+
+
 static void
 printBoard() {
-    printf("\e[2;0H");
-
     printf("+");
     for (int x = 0; x < size; x++)
         printf("-");
@@ -56,14 +86,14 @@ printBoard() {
                 int n = gameGetSurroundingMines(x, y);
 
                 switch (n) {
-                    case 1: printf("\e[94m"); break;
-                    case 2: printf("\e[92m"); break;
-                    case 3: printf("\e[91m"); break;
-                    case 4: printf("\e[34m"); break;
-                    case 5: printf("\e[31m"); break;
-                    case 6: printf("\e[36m"); break;
-                    case 7: printf("\e[90m"); break;
-                    case 8: printf("\e[37m"); break;
+                case 1: printf("\e[94m"); break;
+                case 2: printf("\e[92m"); break;
+                case 3: printf("\e[91m"); break;
+                case 4: printf("\e[34m"); break;
+                case 5: printf("\e[31m"); break;
+                case 6: printf("\e[36m"); break;
+                case 7: printf("\e[90m"); break;
+                case 8: printf("\e[37m"); break;
                 }
 
                 n ? printf("%d", n) : printf(" ");
@@ -92,51 +122,40 @@ ansi_start(const int *lboard, int lsize) {
     board = lboard;
     size = lsize;
 
+    sem_draw = sem_create(1);
+
+    char tstack[512];
+    clone(&keyboard_thread, NULL, &tstack[512]);
+
     /* Console game loop */
-    printBoard();
-    printf("\e[%d;%dH", MARGIN_T + 1 + cury, MARGIN_L + 1 + curx);
-
-    char input = 0;
     int run = 1;
-    while (run) {
-        input = getchar();
+    do {
+        sem_wait(sem_draw);
 
-        if (isalpha(input)) {
-            input = tolower(input);
-            switch (input) {
-                case 'a': curx--; break;
-                case 'd': curx++; break;
-                case 'w': cury--; break;
-                case 's': cury++; break;
-                case 'f': gameFlagCell(curx, cury); break;
-                case 'c': gameClearCell(curx, cury); break;
-            }
-        }
-        if (curx < 0) curx = size - 1;
-        if (cury < 0) cury = size - 1;
-        if (curx >= size) curx = 0;
-        if (cury >= size) cury = 0;
+        printf("\e[2;0H");
 
-        printBoard();
-
-        printf("\e[%d;%dH", MARGIN_T + 1 + cury, MARGIN_L + 1 + curx);
-
-        if (gameGetState() == STATE_LOST) {
+        switch (gameGetState()) {
+        case STATE_LOST: {
             printf(TXT_LOST);
             run = 0;
-        }
-
-        if (gameGetState() == STATE_WON) {
+        } break;
+        case STATE_WON: {
             printf(TXT_WON);
             run = 0;
+        } break;
         }
-    }
 
+        printBoard();
+        /* set cursor */
+        printf("\e[%d;%dH", MARGIN_T + 1 + cury, MARGIN_L + 1 + curx);
+    } while (run);
+
+        
     return 0;
 }
 
 void
 ansi_destroy() {
-
+    sem_destroy(sem_draw);
 }
 

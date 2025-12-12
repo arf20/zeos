@@ -29,6 +29,8 @@ typedef unsigned long size_t;
 #define LONG_MAX ((long)(~0UL>>1))
 #define LONG_MIN (~LONG_MAX)
 
+#define     errno   get_errno()
+
 extern char char_map[];
 
 /* SYSCALLS */

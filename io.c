@@ -5,6 +5,7 @@
 #include <io.h>
 
 #include <hardware.h>
+#include <klibc.h>
 
 #include <types.h>
 
@@ -43,44 +44,7 @@ outb(unsigned short port, unsigned char data) {
     __asm__("out %%al, %%dx" : : "a" (data), "d" (port));
 }
 
-/* === structural libc stuff */
 
-static void *
-memmove(void *dest, const void *src, int n) {
-    char *d = (char*)dest; const char *s = (char*)src;
-    if (s > d)
-        for (int i = 0; i < n; i++)
-            d[i] = s[i];
-    else
-        for (int i = n - 1; i >= 0; i--)
-            d[i] = s[i];
-    return dest;
-}
-
-int
-atoi(const char *str) {
-    int res = 0;
-    while (*str >= '0' && *str <= '9')
-        res = (res * 10) + *str++ - '0';
-    return res;
-}
-
-char *
-strchr(const char *str, char c) {
-    while (*str) {
-        if (*str == c) return (char*)str;
-        str++;
-    }
-
-    return NULL;
-}
-
-int
-strlen(const char *str) {
-    int i = 0;
-    while (str[i]) { i++; }
-    return i;
-}
 
 /* === VGA text mode driver */
 

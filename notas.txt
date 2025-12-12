@@ -99,10 +99,14 @@ We copied the functionality of fork(), but without allocating a new data segment
 becase data is completely shared, given that the thread stack is inside the
 parent thread stack. PCBs are copied 1:1.
 
-thread_exit() then deallocates the current PCB and schedules the next thread.
+exit() was also modified accordingly to destroy process resources only when
+this is the last thread standing
 
-exit() was also modified accordingly to destroy any threads created by the
-process.
+Thread local errno was implemented as a macro for get_errno() syscall,
+which is set in the wrappers with set_errno() syscall
+
+We solved the directory allocation problem by dynamically allocating any
+free directory by looking it up in the PCBs
 
 Test 1
 ```
@@ -127,10 +131,31 @@ char tstack[1024];
 clone(NULL, NULL, tstack);
 ``` retorna <0
 
+Test 4
+```
+[en thread]
+write(1, "a", 1);
+printf("%d", errno);
+```
+
+Test 5
+```
+[en main]
+fork();
+
+char tstack[1024];
+clone(&keyboard_thread, NULL, &tstack[1023]);
+```
+
 
 7. 
 
 Functional synchronization support.
+
+Test 1
+```
+[
+```
 
 
 8. Functional getSlot and delSlot features.
@@ -158,6 +183,7 @@ for (DWord i = 0; i < 1024*1024; i += 1024) {
     write(1, &slot[i], 1);
 }
 del_slot(slot);
+slot[0] = 0;
 ```
 
 Test 2
@@ -191,4 +217,14 @@ del_slot(NULL);
    - [X] y de clone
  - [X] thread exit
  - [X] Check n and m bounds.
+
+ - [X] no hay thread exit, exit tiene que terminar un thread, y si es el ultimo, liberar recursos (directorio)
+ - [X] gestion de directorio: fork() puede coger la PCB de un thread
+ - [X] thread local errno
+ 
+ - [ ] desbloquear threads cuando se destruye un semaforo (con return especifico)
+ - [ ] solo puede destruir el semaforo el thread que lo ha creado
+ - [ ] exit libera semaforos
+
+ - [ ] exit libera slots
 

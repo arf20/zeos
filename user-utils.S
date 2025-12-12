@@ -32,7 +32,8 @@ sysenter_return:
     jge     syscall_ret
 
     neg     %eax
-    mov     %eax, errno
+    push    %eax
+    call    set_errno
     mov     $-1, %eax
 
     jmp     syscall_ret
@@ -78,4 +79,8 @@ FAST_SYSCALL(get_stats, 35)
 FAST_SYSCALL(poll_event, 36)
 /* int clone(void (*function)(void*), void *parameter, char *stack) */
 FAST_SYSCALL(clone, 3)
+/* void set_errno(int) */
+FAST_SYSCALL(set_errno, 16)
+/* int get_errno() */
+FAST_SYSCALL(get_errno, 17)
 

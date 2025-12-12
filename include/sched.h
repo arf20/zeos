@@ -25,6 +25,7 @@ struct task_struct {
   int total_quantum;        /* Total quantum of the process */
   struct stats p_stats;     /* Process stats */
   slot_t slots[NR_SLOTS];   /* im sorry: only 8 slots allowed */
+  int errno;
 };
 
 union task_union {
