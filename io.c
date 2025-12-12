@@ -176,8 +176,12 @@ handle_csi(char *csi) {
             if (mpos == (void*)1)
                 return;
 
+            /* check bounds */
+            if (n < 0 || n >= NUM_ROWS || m < 0 || m >= NUM_COLUMNS)
+                return;
+
             /* set cursor */
-            x = n; y = m;
+            x = m; y = n;
             vga_set_cursor(n, m);
         } break;
         /* set color command */

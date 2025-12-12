@@ -8,9 +8,7 @@ void
 keyboard_thread(void *data)
 {
     while(1) {
-        sem_wait(sem);
-        printf("%c\n", getchar()) ;
-        sem_signal(sem);
+        getchar();
     }
 }
 
@@ -25,8 +23,10 @@ main(void)
 
     sem = sem_create(1);
 
-    char tstack[1024];
-    clone(&keyboard_thread, NULL, &tstack[1023]);
+    //char tstack[1024];
+    //clone(&keyboard_thread, NULL, &tstack[1023]);
+    
+
 
     ansi_start(gameGetBoard(), size);
 
@@ -36,5 +36,7 @@ main(void)
     gameDestroy();
     
     sem_destroy(sem);
+
+    exit();
 }
 

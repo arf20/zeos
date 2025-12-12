@@ -52,6 +52,12 @@ write(1, "adios", 7);
 Prints "adios" at position 20,20.
 
 
+Invalid test
+```
+write(1, "\x1b[40;90H", 8);     /* no effect */
+write(1, "adios", 7);
+```
+
 4. Functional remove character feature.
 
 This is a special case of moving and writing (a space), so we decided against
@@ -86,22 +92,106 @@ write(1, "akjsdaf", 7);
 Prints 'akjsdaf' in red, and the same again with blue background and yellow
 foreground.
 
- [X] 1. (1 point)   Keyboard support stores keys in a circular buffer.
- [X] 2. (1 point)   Functional pollEvent feature.
- [X] 3. (.5 points) Functional change cursor position feature.
- [X] 4. (.5 points) Functional remove character feature.
- [X] 5. (1 point)   Functional change foreground and background color features.
- [X] 6. (2 points)  Functional clone and exit system calls.
- [W] 7. (2 point)   Functional synchronization support.
- [ ] 8. (1 points)  Functional getSlot and delSlot features.
- [ ] 9. (1 point)   Functional game using different implemented features.
- [ ] 10. [Optional] (1 point) Challenge: Implement a user level slab allocator on top of ‘getSlot’.
 
-improvements:
+6. Functional clone and exit system calls.
 
- [X] poll event -> scancodes
- [X] no machacar scancodes nuevos
- [X] comprobar parametros de poll event
- [X]     y de clone
- [ ] thread exit
+We copied the functionality of fork(), but without allocating a new data segment
+becase data is completely shared, given that the thread stack is inside the
+parent thread stack. PCBs are copied 1:1.
+
+thread_exit() then deallocates the current PCB and schedules the next thread.
+
+exit() was also modified accordingly to destroy any threads created by the
+process.
+
+Test 1
+```
+void keyboard_thread(void *);   // loop de teclado
+
+char tstack[1024];
+clone(&keyboard_thread, NULL, &tstack[1023]);
+
+// otro loop de teclado
+```
+
+Test 2
+```
+void keyboard_thread(void *);   // loop de teclado
+
+clone(&keyboard_thread, NULL, NULL);
+``` retorna <0
+
+Test 3
+```
+char tstack[1024];
+clone(NULL, NULL, tstack);
+``` retorna <0
+
+
+7. 
+
+Functional synchronization support.
+
+
+8. Functional getSlot and delSlot features.
+
+We chose to implement a very simple allocator that actually supports
+freeing slots.
+
+We have a vector of fixed size per thread, that stores what allocations are
+currently in the present thread (up to 10). The get_slot() syscall places the
+slot after the highest currently allocated page, so that we may not have to
+think about putting allocations in holes between allocations. del_slot() simply
+clears the allocation in the slot vector and unmaps the pages appropiately.
+
+access_ok() was modified to account for allocations outside initial user data 
+segment.
+
+And lastly so, fork() was modified to account for allocating and copying parent
+slots.
+
+Test 1
+```
+char *slot = get_slot(1024*1024);
+for (DWord i = 0; i < 1024*1024; i += 1024) {
+    slot[i] = 'a';
+    write(1, &slot[i], 1);
+}
+del_slot(slot);
+```
+
+Test 2
+```
+del_slot(NULL);
+``` retorna <0
+
+
+9. Functional game using different implemented features.
+
+
+
+## TODO
+
+  - [X] 1. (1 point)   Keyboard support stores keys in a circular buffer.
+  - [X] 2. (1 point)   Functional pollEvent feature.
+  - [X] 3. (.5 points) Functional change cursor position feature.
+  - [X] 4. (.5 points) Functional remove character feature.
+  - [X] 5. (1 point)   Functional change foreground and background color features.
+  - [X] 6. (2 points)  Functional clone and exit system calls.
+  - [X] 7. (2 point)   Functional synchronization support.
+  - [X] 8. (1 points)  Functional getSlot and delSlot features.
+  - [W] 9. (1 point)   Functional game using different implemented features.
+  - [N] 10. [Optional] (1 point) Challenge: Implement a user level slab allocator on top of ‘getSlot’.
+
+### improvements
+
+ - [X] poll event -> scancodes
+ - [X] no machacar scancodes nuevos
+ - [X] comprobar parametros de poll event
+   - [X] y de clone
+ - [X] thread exit
+ - [X] Check n and m bounds.
+
+
+
 

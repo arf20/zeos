@@ -82,28 +82,31 @@ int sys_fork(void)
     }
     else /* No more free pages left. Deallocate everything */
     {
-      /* Deallocate allocated pages. Up to pag. */
-      for (i=0; i<pag; i++)
-      {
-        free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
-        del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
-      }
-      /* Deallocate task_struct */
-      list_add_tail(lhcurrent, &freequeue);
-      
-      /* Return error */
-      return -EAGAIN; 
+       goto error;
+    }
+  }
+
+  /* allocate slots */
+  slot_t *slots = current()->slots;
+  for (int i = 0; i < NR_SLOTS; i++) {
+    if (!slots[i].allocated)
+      continue;
+
+    for (pag = slots[i].place; pag < slots[i].place + slots[i].npages; pag++) {
+      new_ph_pag = alloc_frame();
+      if (new_ph_pag != -1)
+        set_ss_pag(process_PT, slots[i].place + pag, new_ph_pag);
+      else
+         goto error;
     }
   }
 
   /* Copy parent's SYSTEM and CODE to child. */
   page_table_entry *parent_PT = get_PT(current());
-  for (pag=0; pag<NUM_PAG_KERNEL; pag++)
-  {
+  for (pag=0; pag<NUM_PAG_KERNEL; pag++)   {
     set_ss_pag(process_PT, pag, get_frame(parent_PT, pag));
   }
-  for (pag=0; pag<NUM_PAG_CODE; pag++)
-  {
+  for (pag=0; pag<NUM_PAG_CODE; pag++) {
     set_ss_pag(process_PT, PAG_LOG_INIT_CODE+pag, get_frame(parent_PT, PAG_LOG_INIT_CODE+pag));
   }
   /* Copy parent's DATA to child. We will use TOTAL_PAGES-1 as a temp logical page to map to */
@@ -114,6 +117,19 @@ int sys_fork(void)
     copy_data((void*)(pag<<12), (void*)((pag+NUM_PAG_DATA)<<12), PAGE_SIZE);
     del_ss_pag(parent_PT, pag+NUM_PAG_DATA);
   }
+  /* copy slots */
+  for (int i = 0; i < NR_SLOTS; i++) {
+    if (!slots[i].allocated)
+      continue;
+
+    for (pag = slots[i].place; pag < slots[i].place + slots[i].npages; pag++) {
+      /* Map one child page to parent's address space. */
+      set_ss_pag(parent_PT, pag, get_frame(process_PT, pag));
+      copy_data((void*)(pag << 12), (void*)(pag << 12), PAGE_SIZE);
+      del_ss_pag(parent_PT, pag);
+    }
+  }
+
   /* Deny access to the child's memory space */
   set_cr3(get_DIR(current()));
 
@@ -142,6 +158,19 @@ int sys_fork(void)
   list_add_tail(&(uchild->task.list), &readyqueue);
   
   return uchild->task.PID;
+
+error:
+  /* Deallocate allocated pages. Up to pag. */
+  for (i=0; i<pag; i++)
+  {
+    free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
+    del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
+  }
+  /* Deallocate task_struct */
+  list_add_tail(lhcurrent, &freequeue);
+  
+  /* Return error */
+  return -EAGAIN;
 }
 
 #define TAM_BUFFER 512
@@ -248,7 +277,7 @@ int sys_poll_event(event_t *e) {
 
     /* empty buffer */
     if (keyin == keyout)
-        return -EAGAIN;     /* try again */
+        return 0;     /* try again */
 
     /* pop key off buffer */
     *e = *(keyout++);
@@ -256,7 +285,7 @@ int sys_poll_event(event_t *e) {
     if (keyout > (&keybuff[KEYBUFF_SIZE - 1]))
         keyout = keybuff;
     /* success */
-    return 0;
+    return 1;
 }
 
 
@@ -430,6 +459,10 @@ int sys_del_slot(void *s) {
     for (; slot < NR_SLOTS; slot++)
         if (slots[slot].place == ((DWord)s >> 12))
             break;
+
+    if (slot == NR_SLOTS)
+        return 0;
+
     DWord place = slots[slot].place;
 
     /* free pages */

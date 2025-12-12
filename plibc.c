@@ -27,7 +27,7 @@
 
 int errno;
 
-static char char_map[] = {
+char char_map[] = {
   '\0','\0','1','2','3','4','5','6',
   '7','8','9','0','\'','¡','\0','\0',
   'q','w','e','r','t','y','u','i',
@@ -116,9 +116,12 @@ utoa(unsigned int num, int base) {
     return buff;
 }
 
+/* does not handle negative numbers */
 int
 atoi(const char *str) {
     int res = 0;
+    while (*str || *str < '0' || *str > '9')
+        str++;
     for (int i = 0; str[i] != '\0'; i++)
         res = res * 10 + str[i] - '0';
     return res;
@@ -482,11 +485,11 @@ printf(char *format, ...) {
 /* Get character and echo it */
 char
 getchar() {
-    event_t e;
+    event_t e = { 0 };
     int res = -1;
     do {
         res = poll_event(&e);
-    } while (res < 0 || !e.pressed);
+    } while (res == 0 || !e.pressed);
     char c = char_map[e.c];
     putchar(c);
     return c;

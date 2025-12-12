@@ -30,12 +30,15 @@
 static int size = 0;
 static const int *board = NULL;
 
+#define MARGIN_L 0
+#define MARGIN_T 2
+
 /* cursor */
 static int curx = 0, cury = 0;
 
 static void
 printBoard() {
-    printf("\e[2,2H");
+    printf("\e[2;0H");
 
     printf("+");
     for (int x = 0; x < size; x++)
@@ -82,10 +85,6 @@ printBoard() {
     for (int x = 0; x < size; x++)
         printf("-");
     printf("+\n");
-
-    /* Go home */
-    for (int x = size + 2; x > 0; x--)
-        printf("\e[A");
 }
 
 int
@@ -118,6 +117,8 @@ ansi_start(const int *lboard, int lsize) {
         if (cury >= size) cury = 0;
 
         printBoard();
+
+        printf("\e[%d;%dH", MARGIN_T + 1 + cury, MARGIN_L + 1 + curx);
 
         if (gameGetState() == STATE_LOST) {
             printf(TXT_LOST);
