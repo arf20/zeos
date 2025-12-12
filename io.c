@@ -182,7 +182,7 @@ handle_csi(char *csi) {
 
             /* set cursor */
             x = m; y = n;
-            vga_set_cursor(n, m);
+            vga_set_cursor(m, n);
         } break;
         /* set color command */
         case 'm': {

@@ -54,8 +54,9 @@ char *utoa(unsigned int num, int base);
 int atoi(const char *str);
 long strtol(const char *nptr, char **endptr, int base);
 
-int isalpha(char c);
-unsigned char tolower(unsigned char c);
+int isalpha(int c);
+int toupper(int c);
+int tolower(int c);
 
 int strlen(const char *str);
 int strcmp(const char *s1, const char *s2);

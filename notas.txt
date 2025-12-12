@@ -172,16 +172,16 @@ del_slot(NULL);
 
 ## TODO
 
-  - [X] 1. (1 point)   Keyboard support stores keys in a circular buffer.
-  - [X] 2. (1 point)   Functional pollEvent feature.
-  - [X] 3. (.5 points) Functional change cursor position feature.
-  - [X] 4. (.5 points) Functional remove character feature.
-  - [X] 5. (1 point)   Functional change foreground and background color features.
-  - [X] 6. (2 points)  Functional clone and exit system calls.
-  - [X] 7. (2 point)   Functional synchronization support.
-  - [X] 8. (1 points)  Functional getSlot and delSlot features.
-  - [W] 9. (1 point)   Functional game using different implemented features.
-  - [N] 10. [Optional] (1 point) Challenge: Implement a user level slab allocator on top of ‘getSlot’.
+ - [A] 1. (1 point)   Keyboard support stores keys in a circular buffer.
+ - [A] 2. (1 point)   Functional pollEvent feature.
+ - [A] 3. (.5 points) Functional change cursor position feature.
+ - [A] 4. (.5 points) Functional remove character feature.
+ - [A] 5. (1 point)   Functional change foreground and background color features.
+ - [X] 6. (2 points)  Functional clone and exit system calls.
+ - [X] 7. (2 point)   Functional synchronization support.
+ - [X] 8. (1 points)  Functional getSlot and delSlot features.
+ - [X] 9. (1 point)   Functional game using different implemented features.
+ - [ ] 10. [Optional] (1 point) Challenge: Implement a user level slab allocator on top of ‘getSlot’.
 
 ### improvements
 
@@ -191,7 +191,4 @@ del_slot(NULL);
    - [X] y de clone
  - [X] thread exit
  - [X] Check n and m bounds.
-
-
-
 

@@ -204,7 +204,7 @@ strtol(const char *nptr, char **endptr, int base) {
 
 /* ======== Character functions ======== */
 int
-isalpha(char c) {
+isalpha(int c) {
     return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
 }
 
@@ -300,14 +300,18 @@ strtok(char *str, const char *delim) {
     }
 }
 
-unsigned char
-toupper(unsigned char c) {
-    return c - ('a' - 'A');
+int
+toupper(int c) {
+    if (c >= 'a' && c <= 'z')
+        return c - ('a' - 'A');
+    return c;
 }
 
-unsigned char
-tolower(unsigned char c) {
-    return c + ('a' - 'A');
+int
+tolower(int c) {
+    if (c >= 'A' && c <= 'Z')
+        return c + ('a' - 'A');
+    return c;
 }
 
 char *

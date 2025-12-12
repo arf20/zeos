@@ -25,11 +25,8 @@ main(void)
 
     //char tstack[1024];
     //clone(&keyboard_thread, NULL, &tstack[1023]);
-    
-
 
     ansi_start(gameGetBoard(), size);
-
 
     ansi_destroy();
 

@@ -94,6 +94,7 @@ ansi_start(const int *lboard, int lsize) {
 
     /* Console game loop */
     printBoard();
+    printf("\e[%d;%dH", MARGIN_T + 1 + cury, MARGIN_L + 1 + curx);
 
     char input = 0;
     int run = 1;
