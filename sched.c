@@ -218,6 +218,7 @@ void init_task1(void)
   set_cr3(c->dir_pages_baseAddr);
 
   memset(&c->slots, 0, sizeof(c->slots));
+  memset(&c->sems, 0, sizeof(c->sems));
 }
 
 void init_freequeue()

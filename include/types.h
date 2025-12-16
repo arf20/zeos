@@ -162,10 +162,10 @@ typedef struct {
 
 typedef struct {
     int used;
+    int owner;
     int count;
     struct list_head blocked;
 } sem_t;
-
 
 #define NR_SLOTS    10
 typedef struct {
@@ -175,3 +175,4 @@ typedef struct {
 } slot_t;
 
 #endif  /* __TYPES_H__ */
+

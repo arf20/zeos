@@ -16,6 +16,9 @@
 
 void * get_ebp();
 
+int sys_sem_destroy(sem_t* s);
+int sys_del_slot(void *s);
+
 int check_fd(int fd, int permissions)
 {
   if (fd!=1) return -EBADF; 
@@ -236,6 +239,15 @@ void sys_exit()
         }
     }
 
+    sem_t *sems = current()->sems;
+    for (int i = 0; i < NR_TASKS; i++)
+        if (sems[i].used)
+            sys_sem_destroy(&sems[i]);
+    slot_t *slots = current()->slots;
+    for (int i = 0; i < NR_TASKS; i++)
+        if (slots[i].allocated)
+            sys_del_slot((void*)(slots[i].place << 12));
+
     /* Free task_struct */
     list_add_tail(&(current()->list), &freequeue);
     current()->PID = -1;
@@ -359,29 +371,16 @@ int sys_clone(void (*function)(void*), void *parameter, char *stack) {
     return uchild->task.PID;
 }
 
-#if 0
-int sys_thread_exit() {
-    /* Free task_struct */
-    list_add_tail(&(current()->list), &freequeue);
-
-    current()->PID = -1;
-  
-    /* Restarts execution of the next process */
-    sched_next_rr();
-    
-    return 0;
-}
-#endif
-
 sem_t* sys_sem_create(int initial_value) {
-    static sem_t sems[2*NR_TASKS] = { 0 };  /* allocate twice the semaphores than tasks */
+    sem_t *sems = current()->sems;
 
     int i = 0;
-    for (; i < 2*NR_TASKS; i++)
+    for (; i < NR_TASKS; i++)
         if (!sems[i].used)
             break;
 
     sems[i].used = 1;
+    sems[i].owner = current()->PID;
     sems[i].count = initial_value;
     INIT_LIST_HEAD(&sems[i].blocked);
 
@@ -407,9 +406,26 @@ int sys_sem_signal(sem_t* s) {
     return 0;
 }
 
+/* POSIX: 
+ * Destroying  a  semaphore  that  other processes or threads are currently
+ * blocked on (in sem_wait(3)) produces undefined behavior.
+ */
 int sys_sem_destroy(sem_t* s) {
+    if (!s)
+        return -EINVAL;
+
+    if (s->owner != current()->PID)
+        return -EPERM;
+
+    int ret = 0;
+    for (struct list_head *e = list_first(&s->blocked); e->next; e = e->next) {
+        list_del(e);
+        list_add_tail(e, &readyqueue);
+        ret = -EBUSY;
+    }
+
     s->used = 0;
-    return 0;
+    return ret;
 }
 
 void *sys_get_slot(DWord size) {

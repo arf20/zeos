@@ -222,9 +222,9 @@ del_slot(NULL);
  - [X] gestion de directorio: fork() puede coger la PCB de un thread
  - [X] thread local errno
  
- - [ ] desbloquear threads cuando se destruye un semaforo (con return especifico)
- - [ ] solo puede destruir el semaforo el thread que lo ha creado
- - [ ] exit libera semaforos
+ - [X] desbloquear threads cuando se destruye un semaforo (con return especifico)
+ - [X] solo puede destruir el semaforo el thread que lo ha creado
+ - [X] exit libera semaforos
 
- - [ ] exit libera slots
+ - [X] exit libera slots
 
