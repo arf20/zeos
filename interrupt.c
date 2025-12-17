@@ -124,6 +124,8 @@ void page_fault_routine_new(unsigned int eip)
 {
     printk("\nPage Fault at EIP 0x");
     printk(leftpad(utoa(eip, 16), 8, '0'));
+    printk("at TID ");
+    printk(utoa(current()->TID, 10));
     printk("\n");
     while (1) {}
 }

@@ -38,6 +38,7 @@ int write(int fd, const char *buffer, int size);
 int gettime();
 int clone(void (*function)(void*), void *parameter, char *stack);
 int getpid();
+int gettid();
 int fork();
 void exit();
 int yield();

@@ -61,6 +61,8 @@ FAST_SYSCALL(gettime, 10)
 FAST_SYSCALL(yield, 13)
 /* int getpid() */
 FAST_SYSCALL(getpid, 20)
+/* int gettid() */
+FAST_SYSCALL(gettid, 21)
 /* int sem_create(int initial_value) */
 FAST_SYSCALL(sem_create, 25)
 /* int sem_wait(sem_t *s) */

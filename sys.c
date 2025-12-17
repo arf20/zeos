@@ -46,6 +46,11 @@ int sys_getpid()
     return current()->PID;
 }
 
+int sys_gettid()
+{
+    return current()->TID;
+}
+
 int global_PID = 1000;
 
 int ret_from_fork()
@@ -69,6 +74,11 @@ int sys_fork(void)
   
   /* Copy the parent's task struct to child's */
   copy_data(current(), uchild, sizeof(union task_union));
+
+  for (int i = 0; i < NR_TASKS; i++)
+    uchild->task.sems[i].used = 0;
+  for (int i = 0; i < NR_TASKS; i++)
+    uchild->task.slots[i].allocated = 0;
   
   /* new pages dir */
   allocate_DIR((struct task_struct*)uchild);
@@ -137,6 +147,7 @@ int sys_fork(void)
   set_cr3(get_DIR(current()));
 
   uchild->task.PID=++global_PID;
+  uchild->task.TID = new_tid();
   uchild->task.state=ST_READY;
 
   int register_ebp;        /* frame pointer */
@@ -333,8 +344,13 @@ int sys_clone(void (*function)(void*), void *parameter, char *stack) {
     /* Copy the parent's task struct to child's */
     copy_data(current(), uchild, sizeof(union task_union));
     
+    for (int i = 0; i < NR_TASKS; i++)
+        uchild->task.sems[i].used = 0;
+    for (int i = 0; i < NR_TASKS; i++)
+        uchild->task.slots[i].allocated = 0;
   
     uchild->task.PID = global_PID++;
+    uchild->task.TID = new_tid(); 
     uchild->task.state = ST_READY;
 
     int register_ebp;        /* frame pointer */
@@ -368,7 +384,7 @@ int sys_clone(void (*function)(void*), void *parameter, char *stack) {
     uchild->task.state = ST_READY;
     list_add_tail(&(uchild->task.list), &readyqueue);
     
-    return uchild->task.PID;
+    return uchild->task.TID;
 }
 
 sem_t* sys_sem_create(int initial_value) {
@@ -390,7 +406,7 @@ sem_t* sys_sem_create(int initial_value) {
 int sys_sem_wait(sem_t* s) {
     s->count--;
     if (s->count < 0) {
-        list_add_tail(&current()->list, &s->blocked);
+        update_process_state_rr(current(), &s->blocked);
         sched_next_rr();
     }
     return 0;
@@ -398,10 +414,16 @@ int sys_sem_wait(sem_t* s) {
 
 int sys_sem_signal(sem_t* s) {
     s->count++;
-    if (s->count <= 0) {
-        struct list_head *l = list_first(&s->blocked);
-        list_del(l);
-        list_add_tail(l, &readyqueue);
+    if (s->count > 0)
+        return 0;
+
+    struct list_head *e, *tmp;
+    list_for_each_safe(e, tmp, &s->blocked) {
+        struct task_struct *t = list_entry(e, struct task_struct, list);
+        if (t->state != ST_BLOCKED)
+            continue;
+
+        update_process_state_rr(t, &readyqueue);
     }
     return 0;
 }

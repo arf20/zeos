@@ -186,6 +186,8 @@ void init_idle (void)
 
   c->register_esp=(int)&(uc->stack[KERNEL_STACK_SIZE-2]); /* top of the stack */
 
+  c->TID = new_tid();
+
   idle_task=c;
 }
 
@@ -219,6 +221,8 @@ void init_task1(void)
 
   memset(&c->slots, 0, sizeof(c->slots));
   memset(&c->sems, 0, sizeof(c->sems));
+
+  c->TID = new_tid();
 }
 
 void init_freequeue()
@@ -275,5 +279,12 @@ void force_task_switch()
   update_process_state_rr(current(), &readyqueue);
 
   sched_next_rr();
+}
+
+
+int new_tid()
+{
+    static int next_tid = 0;
+    return next_tid++;
 }
 

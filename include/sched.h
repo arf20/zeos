@@ -24,9 +24,10 @@ struct task_struct {
     enum state_t state;         /* State of the process */
     int total_quantum;          /* Total quantum of the process */
     struct stats p_stats;       /* Process stats */
-    slot_t slots[NR_SLOTS];     /* im sorry: only 8 slots allowed */
+    slot_t slots[NR_SLOTS];     /* im sorry: only 10 slots allowed */
     sem_t sems[NR_TASKS];       /* semaphores */
     int errno;
+    int TID;
 };
 
 union task_union {
@@ -79,5 +80,7 @@ int needs_sched_rr();
 void update_sched_data_rr();
 
 void init_stats(struct stats *s);
+
+int new_tid();
 
 #endif  /* __SCHED_H__ */

@@ -31,7 +31,7 @@ static int size = 0;
 static const int *board = NULL;
 
 #define MARGIN_L 0
-#define MARGIN_T 2
+#define MARGIN_T 3
 
 /* cursor */
 static int curx = 0, cury = 0;
@@ -43,7 +43,7 @@ void
 keyboard_thread(void *data)
 {
     int input = 0;
-    while (gameGetState() == STATE_GOING) {
+    while (/*gameGetState() == STATE_GOING*/1) {
         input = getchar();
 
         if (isalpha(input)) {
@@ -64,6 +64,8 @@ keyboard_thread(void *data)
 
         sem_signal(sem_draw);
     }
+
+    exit();
 }
 
 
@@ -125,14 +127,16 @@ ansi_start(const int *lboard, int lsize) {
     sem_draw = sem_create(1);
 
     char tstack[512];
-    clone(&keyboard_thread, NULL, &tstack[512]);
+    int keyb_tid = clone(&keyboard_thread, NULL, &tstack[512]);
+
+    printf("keyboard thread: %d, board thread: %d\n", keyb_tid, gettid());
 
     /* Console game loop */
     int run = 1;
     do {
         sem_wait(sem_draw);
 
-        printf("\e[2;0H");
+        printf("\e[%d;%dH", MARGIN_T, MARGIN_L);
 
         switch (gameGetState()) {
         case STATE_LOST: {
