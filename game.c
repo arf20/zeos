@@ -133,6 +133,9 @@ checkWin(void) {
 /* Cell clearing recursive algorithm */
 void
 gameClearCell(int x, int y) {
+    if (x < 0 || x > size - 1 || y < 0 || y > size - 1)
+        return;
+
     if (CHECK_CLEAR(BOARDXY(x, y)) || CHECK_FLAG(BOARDXY(x, y))) {
         return;
     }
@@ -144,36 +147,28 @@ gameClearCell(int x, int y) {
 
         /* If no mine near, propagate surrounding cells */
         if (gameGetSurroundingMines(x, y) == 0) {
-            if (x > 0 && y > 0 &&
-                !CHECK_CLEAR(BOARDXY(x - 1, y - 1)) &&
+            if (!CHECK_CLEAR(BOARDXY(x - 1, y - 1)) &&
                 !CHECK_MINE(BOARDXY(x - 1, y - 1)))
                     gameClearCell(x - 1, y - 1);
-            if (y > 0 &&
-                !CHECK_CLEAR(BOARDXY(x    , y - 1)) &&
+            if (!CHECK_CLEAR(BOARDXY(x    , y - 1)) &&
                 !CHECK_MINE(BOARDXY(x    , y - 1)))
                     gameClearCell(x    , y - 1);
-            if (x < size - 1 && y > 0        &&
-                !CHECK_CLEAR(BOARDXY(x + 1, y - 1)) &&
+            if (!CHECK_CLEAR(BOARDXY(x + 1, y - 1)) &&
                 !CHECK_MINE(BOARDXY(x + 1, y - 1)))
                     gameClearCell(x + 1, y - 1);
-            if (x > 0                        &&
-                !CHECK_CLEAR(BOARDXY(x - 1, y    )) &&
+            if (!CHECK_CLEAR(BOARDXY(x - 1, y    )) &&
                 !CHECK_MINE(BOARDXY(x - 1, y    )))
                     gameClearCell(x - 1, y    );
-            if (x < size - 1                 &&
-                !CHECK_CLEAR(BOARDXY(x + 1, y    )) &&
+            if (!CHECK_CLEAR(BOARDXY(x + 1, y    )) &&
                 !CHECK_MINE(BOARDXY(x + 1, y    )))
                     gameClearCell(x + 1, y    );
-            if (x > 0        && y < size - 1 &&
-                !CHECK_CLEAR(BOARDXY(x - 1, y + 1)) &&
+            if (!CHECK_CLEAR(BOARDXY(x - 1, y + 1)) &&
                 !CHECK_MINE(BOARDXY(x - 1, y + 1)))
                     gameClearCell(x - 1, y + 1);
-            if (                y < size - 1 &&
-                !CHECK_CLEAR(BOARDXY(x    , y + 1)) &&
+            if (!CHECK_CLEAR(BOARDXY(x    , y + 1)) &&
                 !CHECK_MINE(BOARDXY(x    , y + 1)))
                     gameClearCell(x    , y + 1);
-            if (x < size - 1 && y < size - 1 &&
-                !CHECK_CLEAR(BOARDXY(x + 1, y + 1)) &&
+            if (!CHECK_CLEAR(BOARDXY(x + 1, y + 1)) &&
                 !CHECK_MINE(BOARDXY(x + 1, y + 1)))
                     gameClearCell(x + 1, y + 1);
         }
